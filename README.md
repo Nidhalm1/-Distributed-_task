@@ -38,3 +38,7 @@ Notes / Next steps
 - Add encryption (pre-shared key) for gossip if you need confidentiality.
 - Implement a proper Delegate to store/merge user metadata.
 - Add tests and containerized examples for multi-node simulation.
+
+
+go build -o memberlist-demo.exe
+.\memberlist-demo.exe 1059

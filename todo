@@ -1,0 +1,10 @@
+1/ la ils contactent un seul noeud le meme pour rejoindre changez ca; en fichier json ou autre
+// mettre à jour l'envoie de cpu regarde dans c++ plus periodiquement
+//rajouter mutex car update au mm temps que on lit ou autre ect
+
+// rajouter docker pour l'envoie des tache mais pas mnt
+
+// implementer algo predective car  si cpu 50% pas pareil 50% de 8go ram ou 16 go ram
+
+
+//faire en sorte de recevoir la task et la transfomrer en tant que taskI
