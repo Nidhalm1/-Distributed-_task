@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"maps"
+	"os"
+
+	"os/exec"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -17,7 +20,21 @@ func (d *MyDelegate) NodeMeta(limit int) []byte {
 }
 
 // le message recu  (envoye par un autre noed)
-func (d *MyDelegate) NotifyMsg(msg []byte) {}
+func (d *MyDelegate) NotifyMsg(msg []byte) {
+	var t task
+	if err := json.Unmarshal(msg, &t); err != nil {
+		log.Println("json.Unmarshal error:", err)
+		return
+	}
+	cmd := exec.Command(t.Command, t.Args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("command execution error: %v", err)
+	}
+
+}
 
 // message à envoyer quand on veut à tt le monde
 func (d *MyDelegate) GetBroadcasts(overhead, limit int) [][]byte {
@@ -38,7 +55,6 @@ func (d *MyDelegate) MergeRemoteState(buf []byte, join bool) {
 		return
 	}
 	maps.Copy(clusterState, recu)
-
 }
 
 type MyEventDelegate struct{}

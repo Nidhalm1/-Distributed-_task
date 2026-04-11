@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/memberlist"
 )
 
+var config *memberlist.Config
+
 func main() {
 
 	config := memberlist.DefaultLocalConfig() // prepare la config du nord son nom , port ect
@@ -37,5 +39,7 @@ func main() {
 		list.Join([]string{"127.0.0.1:7946"}) // essaie de rejoindre un cluster existant en se connectant à un node déjà présent
 	}
 	log.Println("Node:", config.Name, "started")
+	list.Members()
+	go boucle(list)
 	select {}
 }

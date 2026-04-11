@@ -24,6 +24,8 @@ type task struct {
 	CreatedAt string   `json:"created_at"`
 }
 
+var mesTasks = make(map[int]task)
+
 // rendre plutot periodique  qui tourne en arrirer pour les info
 func init() {
 	state.Load = 6
