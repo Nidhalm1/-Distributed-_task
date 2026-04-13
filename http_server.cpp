@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
         int r;
         char *buf = (char *)malloc(sizeof(char) * BUFSIZE);
         while((r = read(fd, buf, BUFSIZE)) > 0)
-            // ici récupérer données (info cpu + info mem)
+            // récupérer données (info cpu + info mem)
             std::cout << buf;
 
         close(fd);
