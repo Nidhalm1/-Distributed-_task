@@ -1,6 +1,7 @@
 package main
 
 import (
+	"NVPROJET/common"
 	"encoding/json"
 	"log"
 	"maps"
@@ -21,7 +22,7 @@ func (d *MyDelegate) NodeMeta(limit int) []byte {
 
 // le message recu  (envoye par un autre noed)
 func (d *MyDelegate) NotifyMsg(msg []byte) {
-	var t Task
+	var t common.Task
 	if err := json.Unmarshal(msg, &t); err != nil {
 		log.Println("json.Unmarshal error:", err)
 		return

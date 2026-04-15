@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 GOOS ?= $(shell go env GOOS)
 EXT =
 ifeq ($(GOOS),windows)
@@ -34,3 +35,17 @@ clean:
 	rm -f src/*.o $(TARGET)
 
 .PHONY: all clean
+=======
+CC=g++
+CFLAGS=-Wall
+
+APP=http_server
+
+all: $(APP).o
+
+$(APP).o: $(APP).cpp
+	$(CC) -o $@ $< $(CFLAGS)
+
+clean:
+	rm -f *.o
+>>>>>>> 02aa59b45f6d58927d32f52e7afa71c28a169a71

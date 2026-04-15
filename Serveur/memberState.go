@@ -1,5 +1,9 @@
 package main
 
+import (
+	"NVPROJET/common"
+)
+
 type NodeState struct {
 	Load   int     `json:"load"`
 	CPU    float64 `json:"cpu"`
@@ -14,15 +18,8 @@ type message struct {
 var state NodeState
 var clusterState = make(map[string]NodeState)
 
-type Task struct {
-	ID        int      `json:"id"`
-	Command   string   `json:"command"`
-	Args      []string `json:"args"`
-	Output    string   `json:"output"`
-	Status    string   `json:"status"`
-	Error     string   `json:"error"`
-	CreatedAt string   `json:"created_at"`
-}
+var taskQueue = make(chan common.Task, 100) //thread safe deja
+var tasks = make(map[string]common.Task)
 
 // rendre plutot periodique  qui tourne en arrirer pour les info
 func init() {

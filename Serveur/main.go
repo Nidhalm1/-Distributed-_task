@@ -1,9 +1,6 @@
 package main
 
 import (
-	"NVPROJET/common"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -11,8 +8,6 @@ import (
 
 	"github.com/hashicorp/memberlist"
 )
-
-var taskQueue = make(chan common.Task, 100)
 
 var config *memberlist.Config
 
@@ -47,8 +42,7 @@ func main() {
 	log.Println("Node:", config.Name, "started")
 	//go boucle(list)
 	go startTCPServer(list)
-	go boucle(list)
-
+	//go boucle(list)
 	select {}
 }
 func startTCPServer(list *memberlist.Memberlist) {
@@ -60,19 +54,4 @@ func startTCPServer(list *memberlist.Memberlist) {
 		conn, _ := listener.Accept()
 		go handleClient(conn, list)
 	}
-}
-func handleClient(conn net.Conn, list *memberlist.Memberlist) {
-	defer conn.Close()
-
-	var t common.Task
-
-	err := json.NewDecoder(conn).Decode(&t) // ce qu'il m'envoie
-	if err != nil {
-		fmt.Println("decode error:", err)
-		return
-	}
-	taskQueue <- t
-	handleTask(conn, list)
-	fmt.Println("Task reçue:", t.Command, t.Args)
-	//algo de disstribution opti
 }

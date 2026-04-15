@@ -1,19 +1,10 @@
 package main
 
-import (
-	"bufio"
-	"encoding/json"
-	"fmt"
-	"os"
-	"strings"
-
-	"github.com/hashicorp/memberlist"
-)
-
 var idt int = 0
 
+/*
 // factoriser en plusieur fonctions
-func boucle(list *memberlist.Memberlist) {
+func handleTask(,list *memberlist.Memberlist) {
 	scanner := bufio.NewScanner((os.Stdin))
 
 	// go et implementer un serveuur qui ecoute en c++ et grpc ou autre
@@ -60,3 +51,4 @@ func boucle(list *memberlist.Memberlist) {
 		}
 	}
 }
+*/
