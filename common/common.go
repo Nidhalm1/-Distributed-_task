@@ -1,6 +1,8 @@
 package common
 
-import "time"
+import (
+	"time"
+)
 
 type Task struct {
 	ID        string    `json:"id"`
@@ -12,11 +14,19 @@ type Task struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+var tasks = make(map[string]*Task)
+
 type Result struct {
 	ID string `json:"id"`
 }
-type Request struct {
-	Type string `json:"type"`
+type Response struct {
+	ID string `json:"id"`
+}
+
+type SubmitRequest struct {
+	Type    string
+	Command string
+	Args    []string
 }
 
 type TaskResult struct {

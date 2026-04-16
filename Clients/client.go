@@ -32,90 +32,53 @@ func main() {
 		}
 		line := scanner.Text()
 		if strings.TrimSpace(line) == "exit" {
+			defer conn.Close()
 			break
 		}
-		parts := strings.Fields(line)
-		if len(parts) == 0 {
-			continue
-		}
-		if parts[0] == "submit" {
-			requestType := common.Request{
-				Type: "submit",
-			}
-			requestTyped, err := json.Marshal(requestType)
-			if err != nil {
-				fmt.Println("Erreur JSON:", err)
-				continue
-			}
-			_, err = conn.Write(requestTyped)
-			if err != nil {
-				fmt.Println("Erreur d'envoi:", err)
-				break
-			}
-			t := common.Task{
-				Command: parts[1],
-				Args:    parts[2:],
-			}
-			tdata, err := json.Marshal(t)
-			if err != nil {
-				fmt.Println("Erreur JSON:", err)
-				continue
-			}
-			_, err = conn.Write(tdata)
-			if err != nil {
-				fmt.Println("Erreur d'envoi:", err)
-				break
-			}
-			reader := bufio.NewReader(conn) // je recois forcement Lid apres
-			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				fmt.Println("Erreur de lectur id recu:", err)
-				break
-			}
-			var result common.Result
-			err = json.Unmarshal(line, &result)
-			fmt.Println("id generer", result.ID)
 
-		} else { // pb gerer les exit ect
+		parts := strings.Fields(line)
+		if len(parts) == 1 {
+			fmt.Println("manque la commande")
+			continue
+		} // pb traiter si c des bon argmuent ou pas
+		if parts[0] == "submit" {
+			if len(parts) < 2 {
+				fmt.Println("Usage: submit <commande> <args>")
+				continue
+			}
+			submit := common.SubmitRequest{Type: "submit", Command: parts[1], Args: parts[2:]} // pb envoyer direct la val de commande et le serveur trait
+			data, err := json.Marshal(submit)
+			if err != nil {
+				fmt.Println("Erreur JSON:", err)
+				return
+			}
+			conn.Write(data)
+			var r common.Response
+			err = json.NewDecoder(conn).Decode(&r) // ce qu'il m'envoie
+			if err != nil {
+				fmt.Println("decode error:", err)
+				return
+			}
+			fmt.Println("ID recu", r.ID)
+		} else if parts[0] == "result" { // pb traiter si c des bon argmuent ou pas si c'est dans ma table
 			if len(parts) < 2 {
 				fmt.Println("Usage: result <id>")
 				continue
 			}
-			requestType := common.Request{
-				Type: "result",
-			}
-			requestTyped, err := json.Marshal(requestType)
+			result := common.SubmitRequest{Type: "result", Command: parts[1]} // pb envoyer direct la val de commande et le serveur trait
+			data, err := json.Marshal(result)
 			if err != nil {
 				fmt.Println("Erreur JSON:", err)
-				continue
+				return
 			}
-			_, err = conn.Write(requestTyped)
+			conn.Write(data)
+			var r common.TaskResult
+			err = json.NewDecoder(conn).Decode(&r) // ce qu'il m'envoie
 			if err != nil {
-				fmt.Println("Erreur d'envoi:", err)
-				break
+				fmt.Println("decode error:", err)
+				return
 			}
-			demande := common.Result{
-				ID: parts[1],
-			}
-			Resultdata, err := json.Marshal(demande)
-			if err != nil {
-				fmt.Println("Erreur JSON:", err)
-				continue
-			}
-			_, err = conn.Write(Resultdata)
-			if err != nil {
-				fmt.Println("Erreur d'envoi:", err)
-				break
-			}
-			reader := bufio.NewReader(conn) // je recois forcement  apres
-			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				fmt.Println("Erreur de lectur id recu:", err)
-				break
-			}
-			var task common.TaskResult
-			json.Unmarshal(line, &task)
-			fmt.Printf("Résultat pour la tâche %s :\nSortie: %s\nErreur: %s\nStatut: %s\n", parts[1], task.Output, task.Error, task.Status)
+			fmt.Println("ID recu", r.Status)
 		}
 	}
 }

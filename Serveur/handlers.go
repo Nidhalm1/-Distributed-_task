@@ -11,18 +11,37 @@ import (
 	"github.com/hashicorp/memberlist"
 )
 
-func handleSubmit(conn net.Conn, list *memberlist.Memberlist) {
-	defer conn.Close()
-	var t common.Task
-	err := json.NewDecoder(conn).Decode(&t) // ce qu'il m'envoie
-	if err != nil {
-		fmt.Println("decode error:", err)
-		return
+// pb veriefer l'utiliser de list
+func handleClient(conn net.Conn, list *memberlist.Memberlist) {
+	var requestType common.SubmitRequest
+	for {
+		err := json.NewDecoder(conn).Decode(&requestType) // ce qu'il m'envoie
+		if err != nil {
+			fmt.Println("decode error:", err)
+			return
+		}
+		switch requestType.Type {
+		case "submit":
+			handleSubmit(conn, list, requestType)
+		case "result":
+			handleResult(conn, list, requestType)
+		default:
+		}
 	}
+}
+
+func handleSubmit(conn net.Conn, list *memberlist.Memberlist, requestType common.SubmitRequest) {
+	var t common.Task
+	t.Command = requestType.Command
+	t.Args = requestType.Args
 	t.ID = uuid.New().String()
 	t.CreatedAt = time.Now().UTC()
 	taskQueue <- t
-	resultID, err := json.Marshal(t.ID)
+	tasks[t.ID] = &t
+	var resp common.Response = common.Response{
+		ID: t.ID,
+	}
+	resultID, err := json.Marshal(resp)
 	if err != nil {
 		fmt.Println("Erreur JSON:", err)
 	}
@@ -33,25 +52,7 @@ func handleSubmit(conn net.Conn, list *memberlist.Memberlist) {
 	fmt.Println("Task reçue:", t.Command, t.Args)
 }
 
-func handleClient(conn net.Conn, list *memberlist.Memberlist) {
-	var requestType common.Request
-	for {
-		err := json.NewDecoder(conn).Decode(&requestType) // ce qu'il m'envoie
-		if err != nil {
-			fmt.Println("decode error:", err)
-			return
-		}
-		switch requestType.Type {
-		case "submit":
-			handleSubmit(conn, list)
-		default:
-			handleResult(conn, list)
-		}
-	}
-}
-
-func handleResult(conn net.Conn, list *memberlist.Memberlist) {
-	defer conn.Close()
+func handleResult(conn net.Conn, list *memberlist.Memberlist, requestType common.SubmitRequest) {
 	var r common.Result
 	err := json.NewDecoder(conn).Decode(&r) // ce qu'il m'envoie
 	if err != nil {

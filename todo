@@ -1,4 +1,4 @@
-1/ la ils contactent un seul noeud le meme pour rejoindre changez ca; en fichier json ou autre
+// la ils contactent un seul noeud le meme pour rejoindre changez ca; en fichier json ou autre
 // mettre à jour l'envoie de cpu regarde dans c++ plus periodiquement
 //rajouter mutex car update au mm temps que on lit ou autre ect
 

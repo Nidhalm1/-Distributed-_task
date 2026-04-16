@@ -19,7 +19,7 @@ var state NodeState
 var clusterState = make(map[string]NodeState)
 
 var taskQueue = make(chan common.Task, 100) //thread safe deja
-var tasks = make(map[string]common.Task)
+var tasks = make(map[string]*common.Task)
 
 // rendre plutot periodique  qui tourne en arrirer pour les info
 func init() {

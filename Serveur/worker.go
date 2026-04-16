@@ -1,12 +1,20 @@
 package main
 
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/hashicorp/memberlist"
+)
+
 var idt int = 0
 
-/*
-// factoriser en plusieur fonctions
-func handleTask(,list *memberlist.Memberlist) {
+// pb faux regler plutot le worker qui  depop et fait l'algo
+func handleTask() {
 	scanner := bufio.NewScanner((os.Stdin))
-
 	// go et implementer un serveuur qui ecoute en c++ et grpc ou autre
 	for {
 		fmt.Print("> ")
@@ -51,4 +59,3 @@ func handleTask(,list *memberlist.Memberlist) {
 		}
 	}
 }
-*/

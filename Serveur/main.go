@@ -42,7 +42,6 @@ func main() {
 	log.Println("Node:", config.Name, "started")
 	//go boucle(list)
 	go startTCPServer(list)
-	//go boucle(list)
 	select {}
 }
 func startTCPServer(list *memberlist.Memberlist) {
