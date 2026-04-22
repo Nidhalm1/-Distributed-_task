@@ -143,8 +143,8 @@ int main(int argc, char *argv[]) {
     int fd_cpuinfo = open("/proc/cpuinfo", O_RDONLY);
     int fd_stat = open("/proc/stat", O_RDONLY);
 
-    unsigned long mem_available = 0; // mémoire disponible en kB
-    unsigned int nb_coeur = 0; // nb de coeur du cpu
+    u_int64_t mem_available = 0; // mémoire disponible en kB
+    u_int32_t nb_coeur = 0; // nb de coeur du cpu
     double freqs_sum = 0; // somme des fréquences des coeurs du cpu
 
     // on récupère la valeur de memAvailable
@@ -163,6 +163,8 @@ int main(int argc, char *argv[]) {
     std::cout << "idle % : " << idle_percentage << std::endl;
     std::cout << "mem_available : " << mem_available << std::endl;
     std::cout << "freqs * cpu_idle = " << freqs_by_idle << std::endl;
+    std::cout << "sizeof memavailable " << sizeof(mem_available) << std::endl;
+    std::cout << "sizeof freqs_by_idle " << sizeof(freqs_by_idle) << std::endl;
 
     int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
