@@ -46,7 +46,6 @@ func main() {
 		serverPort = config.BindPort - 1
 	}
 	log.Println("Node:", config.BindPort, "started (tcp server on port", serverPort, ")")
-	// go boucle(list)
 	go startTCPServer(serverPort)
 	go startWorker(list)
 	select {}

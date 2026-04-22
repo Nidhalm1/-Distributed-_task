@@ -5,13 +5,15 @@ import (
 )
 
 type Task struct {
-	ID        string    `json:"id"`
-	Command   string    `json:"command"`
-	Args      []string  `json:"args"`
-	Output    string    `json:"output"`
-	Status    string    `json:"status"`
-	Error     string    `json:"error"`
-	CreatedAt time.Time `json:"created_at"`
+	ID           string    `json:"id"`
+	Command      string    `json:"command"`
+	Args         []string  `json:"args"`
+	Output       string    `json:"output"`
+	Status       string    `json:"status"`
+	Error        string    `json:"error"`
+	CreatedAt    time.Time `json:"created_at"`
+	Estimatedmem int64     `json:"estimatedmem"`
+	Estimatedcpu float64   `json:"estimatedcpu"`
 }
 
 var tasks = make(map[string]*Task)
