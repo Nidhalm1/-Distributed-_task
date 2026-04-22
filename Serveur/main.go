@@ -49,6 +49,7 @@ func main() {
 	// go boucle(list)
 	go startTCPServer(serverPort)
 	go startWorker(list)
+	go ask_values()
 	select {}
 }
 func startTCPServer(serverPort int) {
