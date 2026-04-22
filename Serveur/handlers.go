@@ -8,61 +8,51 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/memberlist"
 )
 
 // pb veriefer l'utiliser de list
-func handleClient(conn net.Conn, list *memberlist.Memberlist) {
+func handleClient(conn net.Conn) {
 	var requestType common.SubmitRequest
+	decoder := json.NewDecoder(conn)
+	encoder := json.NewEncoder(conn)
 	for {
-		err := json.NewDecoder(conn).Decode(&requestType) // ce qu'il m'envoie
+		err := decoder.Decode(&requestType)
 		if err != nil {
-			fmt.Println("decode error:", err)
+			fmt.Println("client disconnected or decode error:", err)
 			return
 		}
 		switch requestType.Type {
 		case "submit":
-			handleSubmit(conn, list, requestType)
+			handleSubmit(encoder, requestType)
 		case "result":
-			handleResult(conn, list, requestType)
+			handleResult(encoder, requestType)
 		default:
 		}
 	}
 }
 
-func handleSubmit(conn net.Conn, list *memberlist.Memberlist, requestType common.SubmitRequest) {
+func handleSubmit(encoder *json.Encoder, requestType common.SubmitRequest) {
 	var t common.Task
 	t.Command = requestType.Command
 	t.Args = requestType.Args
 	t.ID = uuid.New().String()
 	t.CreatedAt = time.Now().UTC()
+	t.Status = "wait"
 	taskQueue <- t
 	tasks[t.ID] = &t
 	var resp common.Response = common.Response{
 		ID: t.ID,
 	}
-	resultID, err := json.Marshal(resp)
-	if err != nil {
-		fmt.Println("Erreur JSON:", err)
-	}
-	_, err = conn.Write(resultID)
-	if err != nil {
-		fmt.Println("Erreur d'envoi:", err)
-	}
+	encoder.Encode(resp)
 	fmt.Println("Task reçue:", t.Command, t.Args)
 }
 
-func handleResult(conn net.Conn, list *memberlist.Memberlist, requestType common.SubmitRequest) {
-	var r common.Result
-	err := json.NewDecoder(conn).Decode(&r) // ce qu'il m'envoie
-	if err != nil {
-		fmt.Println("decode error:", err)
-		return
-	}
-	task, ok := tasks[r.ID]
+func handleResult(Encoder *json.Encoder, requestType common.SubmitRequest) {
+	var id = requestType.ID
+	task, ok := tasks[id]
 	// gerer  le pb task nn trouvé
 	if !ok {
-		fmt.Println("Task not found for ID:", r.ID)
+		fmt.Println("Task not found for ID:", id)
 		return
 	}
 	resp := common.TaskResult{
@@ -70,10 +60,6 @@ func handleResult(conn net.Conn, list *memberlist.Memberlist, requestType common
 		Status: task.Status,
 		Error:  task.Error,
 	}
-	data, err := json.Marshal(resp)
-	if err != nil {
-		fmt.Println("Erreur JSON:", err)
-		return
-	}
-	conn.Write(data)
+	Encoder.Encode(resp)
+
 }

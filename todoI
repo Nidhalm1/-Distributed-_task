@@ -1,0 +1,9 @@
+// pr l'instance ya que le port 7946 qui les autre le rejoint si tombe en panne pb changer ca 
+
+//si une ttask est fini et que le lclient m' a demandé son resulat je la supprime
+
+
+// task avec une certain approxilmation de cpu et mem
+
+
+// c'est le noeud qui recoit task augment son nombre de task mais l'envoyeur aussi ou ca sera fait en gosip

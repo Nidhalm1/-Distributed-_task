@@ -34,7 +34,6 @@ func (d *MyDelegate) NotifyMsg(msg []byte) {
 	if err != nil {
 		log.Printf("command execution error: %v", err)
 	}
-
 }
 
 // message à envoyer quand on veut à tt le monde
@@ -85,5 +84,4 @@ func (e *MyEventDelegate) NotifyUpdate(n *memberlist.Node) {
 	}
 	clusterState[n.Name] = s
 	log.Println("UPDATE:", n.Name)
-
 }
