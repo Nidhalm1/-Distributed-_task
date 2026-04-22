@@ -50,6 +50,7 @@ func main() {
 	go startTCPServer(serverPort)
 	go startWorker(list)
 	go ask_values()
+	go print_values()
 	select {}
 }
 func startTCPServer(serverPort int) {

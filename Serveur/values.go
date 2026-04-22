@@ -4,18 +4,28 @@ import (
     "encoding/binary"
     "fmt"
     "net"
+	"os"
+	"unsafe"
+	"time"
 )
 
 func ask_values() {
-    conn, err := net.Dial("unix", "/tmp/cpu.sock")
+	os.Remove("/tmp/cpu.sock")
+    conn, err := net.Listen("unix", "/tmp/cpu.sock")
     if err != nil {
         panic(err)
     }
     defer conn.Close()
 
-    buf := make([]byte, 8+8) // uint64 + float64
+	client, err := conn.Accept()
+	if err != nil {
+		panic(err)
+	}
+	defer client.Close()
+
+    buf := make([]byte, 16) // uint64 + float64
 	for {
-		_, err = conn.Read(buf)
+		_, err = client.Read(buf)
 		if err != nil {
 			panic(err)
 		}
@@ -23,8 +33,6 @@ func ask_values() {
 		mem := binary.LittleEndian.Uint64(buf[0:8])
 		freq := mathFromBits(buf[8:16])
 	
-		fmt.Println("mem:", mem)
-		fmt.Println("freq:", freq)
 		state.Memory = float64(mem)
 		state.CPU = freq;
 	}
@@ -38,4 +46,12 @@ func mathFromBits(b []byte) float64 {
 
 func float64FromBits(b uint64) float64 {
     return *(*float64)(unsafe.Pointer(&b))
+}
+
+func print_values() {
+	for {
+		time.Sleep(2 * time.Second)
+		fmt.Println(state.Memory)
+		fmt.Println(state.CPU)
+	}
 }
