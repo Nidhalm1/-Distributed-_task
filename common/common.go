@@ -12,7 +12,7 @@ type Task struct {
 	Status       string    `json:"status"`
 	Error        string    `json:"error"`
 	CreatedAt    time.Time `json:"created_at"`
-	Estimatedmem int64     `json:"estimatedmem"`
+	Estimatedmem float64   `json:"estimatedmem"`
 	Estimatedcpu float64   `json:"estimatedcpu"`
 }
 
@@ -26,10 +26,12 @@ type Response struct {
 }
 
 type SubmitRequest struct {
-	Type    string
-	ID      string
-	Command string
-	Args    []string
+	Type         string
+	ID           string
+	Command      string
+	Args         []string
+	EstimatedCPU float64
+	EstimatedMem float64
 }
 
 type TaskResult struct {

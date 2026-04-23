@@ -42,3 +42,8 @@ Notes / Next steps
 
 go build -o memberlist-demo.exe
 .\memberlist-demo.exe 1059
+
+
+
+coté client :
+submit cpu=10 mem=20 ls -l

@@ -7,10 +7,10 @@ import (
 )
 
 type NodeState struct {
-	Load   int     `json:"load"`
-	CPU    float64 `json:"cpu"`
-	Memory float64 `json:"memory"`
-	Tasks  int     `json:"tasks"`
+	Load   int `json:"load"`
+	CPU    int `json:"cpu"`
+	Memory int `json:"memory"`
+	Tasks  int `json:"tasks"`
 }
 type message struct {
 	Node  string    `json:"node"`
@@ -26,7 +26,7 @@ var tasks = make(map[string]*common.Task)
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	state.Load = rand.Intn(10) + 1
-	state.CPU = rand.Float64() * 100.0
-	state.Memory = rand.Float64() * 32.0
+	state.CPU = rand.Int() * 100.0
+	state.Memory = rand.Int() * 32.0
 	state.Tasks = rand.Intn(20) + 1
 }

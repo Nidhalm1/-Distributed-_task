@@ -1,0 +1,31 @@
+Très bonne question 👏 — et c’est exactement le point clé du Late Binding que beaucoup ratent au début.
+
+👉 ta confusion :
+
+“si je choisis au hasard… à quoi sert le probe ?”
+🧠 1. Réponse courte
+
+👉 le random sert à répartir la charge globalement
+👉 le probe sert à prendre la bonne décision localement au bon moment
+
+🔥 2. Les deux rôles sont DIFFERENTS
+🎲 RANDOM
+→ évite que tout le monde choisisse le même node
+→ évite le herd effect
+→ distribue les décisions
+⚡ PROBE (late binding)
+→ choisit le node réellement libre MAINTENANT
+→ ignore les infos obsolètes (gossip)
+→ décision à la milliseconde
+🧠 3. Sans probe (ton système actuel)
+1. tu choisis un node (via clusterState)
+2. tu envoies la tâche
+
+👉 problème :
+
+entre temps → le node devient chargé
+
+
+si on avait choisie map avantage c'est que  ajout et supprimsse direct des noeud dans les buckets mais on peut pas faire rand  pour le choix des noeud dans les buckets faudra copie tt les bucekts dans les listes ect
+liste  quand un noeud change d'etat faut supprimer dans son ancien bucket ect et si c'tetait liste ca aurait pris O (n) à chaque update on luseprime et on le rajouter c 'est pas bien  et si c'est un gors buvcket bcp de noeud de dans pas ouf 
+donc on utiliser une structe qui pour une liste on a associe une map et dans la map chaque noeud est assocué à son indice dans la liste  donc quand on supprimser on connait l'indice du noeud il sufiet de mette le dernier dans cette indice et puis si on ajoute bah  ce ddenier va etre ecraser 

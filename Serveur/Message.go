@@ -4,7 +4,6 @@ import (
 	"NVPROJET/common"
 	"encoding/json"
 	"log"
-	"maps"
 	"os"
 
 	"os/exec"
@@ -54,7 +53,10 @@ func (d *MyDelegate) MergeRemoteState(buf []byte, join bool) {
 		log.Println("json.Unmarshal error:", err)
 		return
 	}
-	maps.Copy(clusterState, recu)
+	for name, state := range recu {
+		clusterState[name] = state
+		classifyNode(name, state)
+	}
 }
 
 type MyEventDelegate struct{}
@@ -67,11 +69,16 @@ func (e *MyEventDelegate) NotifyJoin(n *memberlist.Node) {
 		return
 	}
 	clusterState[n.Name] = s
+	classifyNode(n.Name, s)
 }
 
-// declahcé par moi quand qq un join
+// declahcé par moi quand qq un quit
 func (e *MyEventDelegate) NotifyLeave(n *memberlist.Node) {
 	delete(clusterState, n.Name)
+	bucketMem.remove(n.Name)
+	bucketCpu.remove(n.Name)
+	bucketAvg.remove(n.Name)
+	bucketLow.remove(n.Name)
 	log.Println("LEAVE:", n.Name)
 }
 
@@ -83,5 +90,25 @@ func (e *MyEventDelegate) NotifyUpdate(n *memberlist.Node) {
 		return
 	}
 	clusterState[n.Name] = s
+	classifyNode(n.Name, s)
 	log.Println("UPDATE:", n.Name)
+}
+
+func classifyNode(name string, s NodeState) {
+	// 1. On le supprime de TOUS les buckets par sécurité (O(1), très rapide)
+	bucketMem.remove(name)
+	bucketCpu.remove(name)
+	bucketAvg.remove(name)
+	bucketLow.remove(name)
+
+	// 2. On le range dans le bon bucket
+	if s.Memory >= 8000 {
+		bucketMem.add(name)
+	} else if s.CPU >= 4000 {
+		bucketCpu.add(name)
+	} else if s.CPU >= 2000 && s.Memory >= 4000 {
+		bucketAvg.add(name)
+	} else {
+		bucketLow.add(name)
+	}
 }

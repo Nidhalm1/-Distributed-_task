@@ -10,3 +10,24 @@
 
 
 //explkiquer pour le power of twi choice est le meilleur dans le rapport ici 
+
+
+// serveur morts migration de tache
+
+
+//traiter le cas ou serveur à qui j'envoie est mort
+// le cas ou le serveur à qui le client envoie avait deja envoyé puis il est mort
+
+
+
+
+//changer le nodestae car sionon dans chaque truc ca va gossip alors que ca sert à rien si petite limite
+//enlever le load
+
+// MODIFER le state seuelement si ca depasse 5 pour cent
+
+
+// peut etre retirer clustermap
+
+
+//genre le cas ou il m'envoie pas la tache apres le probe

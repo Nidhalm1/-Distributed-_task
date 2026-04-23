@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -40,19 +41,19 @@ func main() {
 		}
 
 		parts := strings.Fields(line)
-		if len(parts) == 1 {
-			fmt.Println("manque la commande")
-			continue
-		} // pb traiter si c des bon argmuent ou pas
 		if parts[0] == "submit" {
-			if len(parts) < 2 {
-				fmt.Println("Usage: submit <commande> <args>")
+			if len(parts) < 4 {
+				fmt.Println("Usage: submit cpu=<nb> mem=<nb> <commande> <args>")
 				continue
 			}
-			submit := common.SubmitRequest{Type: "submit", Command: parts[1], Args: parts[2:]} // pb envoyer direct la val de commande et le serveur trait
+			cpuStr := strings.TrimPrefix(parts[1], "cpu=")
+			cpu, err := strconv.ParseFloat(cpuStr, 64)
+			memStr := strings.TrimPrefix(parts[2], "mem=")
+			mem, err := strconv.ParseFloat(memStr, 64)
+			submit := common.SubmitRequest{Type: "submit", EstimatedCPU: cpu, EstimatedMem: mem, Command: parts[3], Args: parts[4:]}
 			encoder.Encode(submit)
 			var r common.Response
-			err = decoder.Decode(&r) // ce qu'il m'envoie
+			err = decoder.Decode(&r)
 			if err != nil {
 				fmt.Println("decode error:", err)
 				return

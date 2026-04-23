@@ -33,6 +33,8 @@ func handleClient(conn net.Conn) {
 
 func handleSubmit(encoder *json.Encoder, requestType common.SubmitRequest) {
 	var t common.Task
+	t.Estimatedcpu = requestType.EstimatedCPU
+	t.Estimatedmem = requestType.EstimatedMem
 	t.Command = requestType.Command
 	t.Args = requestType.Args
 	t.ID = uuid.New().String()
