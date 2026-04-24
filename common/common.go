@@ -27,8 +27,6 @@ type Response struct {
 }
 
 type SubmitRequest struct {
-	Type         string
-	ID           string
 	Command      string
 	Args         []string
 	EstimatedCPU int

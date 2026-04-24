@@ -12,20 +12,24 @@ import (
 
 // pb veriefer l'utiliser de list
 func handleClient(conn net.Conn) {
-	var requestType common.SubmitRequest
 	decoder := json.NewDecoder(conn)
 	encoder := json.NewEncoder(conn)
+	var env common.Envelope
 	for {
-		err := decoder.Decode(&requestType)
+		err := decoder.Decode(&env)
 		if err != nil {
 			fmt.Println("client disconnected or decode error:", err)
 			return
 		}
-		switch requestType.Type {
+		switch env.Type {
 		case "submit":
-			handleSubmit(encoder, requestType)
+			var req common.SubmitRequest
+			json.Unmarshal(env.Data, &req)
+			handleSubmit(encoder, req)
 		case "result":
-			handleResult(encoder, requestType)
+			var req common.Result
+			json.Unmarshal(env.Data, &req)
+			handleResult(encoder, req)
 		default:
 		}
 	}
@@ -49,8 +53,8 @@ func handleSubmit(encoder *json.Encoder, requestType common.SubmitRequest) {
 	fmt.Println("Task reçue:", t.Command, t.Args)
 }
 
-func handleResult(Encoder *json.Encoder, requestType common.SubmitRequest) {
-	var id = requestType.ID
+func handleResult(Encoder *json.Encoder, resultRequest common.Result) {
+	var id = resultRequest.ID
 	task, ok := tasks[id]
 	// gerer  le pb task nn trouvé
 	if !ok {

@@ -50,7 +50,7 @@ func main() {
 			cpu, err := strconv.Atoi(cpuStr)
 			memStr := strings.TrimPrefix(parts[2], "mem=")
 			mem, err := strconv.Atoi(memStr)
-			submit := common.SubmitRequest{Type: "submit", EstimatedCPU: cpu, EstimatedMem: mem, Command: parts[3], Args: parts[4:]}
+			submit := common.SubmitRequest{EstimatedCPU: cpu, EstimatedMem: mem, Command: parts[3], Args: parts[4:]}
 			encoder.Encode(submit)
 			var r common.Response
 			err = decoder.Decode(&r)
@@ -70,7 +70,7 @@ func main() {
 				fmt.Println("ID inconnu :", parts[1])
 				continue
 			}
-			result := common.SubmitRequest{Type: "result", ID: parts[1]} // pb envoyer direct la val de commande et le serveur trait
+			result := common.Result{ID: parts[1]}
 			encoder.Encode(result)
 			var r common.TaskResult
 			err = decoder.Decode(&r) // ce qu'il m'envoie
