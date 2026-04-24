@@ -31,3 +31,12 @@
 
 
 //genre le cas ou il m'envoie pas la tache apres le probe
+
+
+// gerer le data race de clusterState
+
+
+// gere le cas ou pas de condidat alors attendre un peu et reessayer?
+
+
+// remplacer le tcp pour l'envoie des tache avec grpc car le resulat peut etre long 

@@ -12,8 +12,8 @@ type Task struct {
 	Status       string    `json:"status"`
 	Error        string    `json:"error"`
 	CreatedAt    time.Time `json:"created_at"`
-	Estimatedmem float64   `json:"estimatedmem"`
-	Estimatedcpu float64   `json:"estimatedcpu"`
+	Estimatedmem int       `json:"estimatedmem"`
+	Estimatedcpu int       `json:"estimatedcpu"`
 }
 
 var tasks = make(map[string]*Task)
@@ -30,8 +30,8 @@ type SubmitRequest struct {
 	ID           string
 	Command      string
 	Args         []string
-	EstimatedCPU float64
-	EstimatedMem float64
+	EstimatedCPU int
+	EstimatedMem int
 }
 
 type TaskResult struct {

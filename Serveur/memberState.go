@@ -3,7 +3,6 @@ package main
 import (
 	"NVPROJET/common"
 	"math/rand"
-	"time"
 )
 
 type NodeState struct {
@@ -24,7 +23,6 @@ var taskQueue = make(chan common.Task, 100) //thread safe deja
 var tasks = make(map[string]*common.Task)
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	state.Load = rand.Intn(10) + 1
 	state.CPU = rand.Int() * 100.0
 	state.Memory = rand.Int() * 32.0

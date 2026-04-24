@@ -47,9 +47,9 @@ func main() {
 				continue
 			}
 			cpuStr := strings.TrimPrefix(parts[1], "cpu=")
-			cpu, err := strconv.ParseFloat(cpuStr, 64)
+			cpu, err := strconv.Atoi(cpuStr)
 			memStr := strings.TrimPrefix(parts[2], "mem=")
-			mem, err := strconv.ParseFloat(memStr, 64)
+			mem, err := strconv.Atoi(memStr)
 			submit := common.SubmitRequest{Type: "submit", EstimatedCPU: cpu, EstimatedMem: mem, Command: parts[3], Args: parts[4:]}
 			encoder.Encode(submit)
 			var r common.Response

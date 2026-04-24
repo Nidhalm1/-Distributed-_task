@@ -106,7 +106,7 @@ func classifyNode(name string, s NodeState) {
 		bucketMem.add(name)
 	} else if s.CPU >= 4000 {
 		bucketCpu.add(name)
-	} else if s.CPU >= 2000 && s.Memory >= 4000 {
+	} else if s.CPU >= 2000 && s.Memory >= 2000 {
 		bucketAvg.add(name)
 	} else {
 		bucketLow.add(name)
