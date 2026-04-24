@@ -40,11 +40,11 @@ func handleSubmit(encoder *json.Encoder, requestType common.SubmitRequest) {
 	t.ID = uuid.New().String()
 	t.CreatedAt = time.Now().UTC()
 	t.Status = "wait"
-	taskQueue <- t
-	tasks[t.ID] = &t
+	tasks[t.ID] = common.TaskResult{}
 	var resp common.Response = common.Response{
 		ID: t.ID,
 	}
+	taskQueue <- t
 	encoder.Encode(resp)
 	fmt.Println("Task reçue:", t.Command, t.Args)
 }
@@ -57,11 +57,6 @@ func handleResult(Encoder *json.Encoder, requestType common.SubmitRequest) {
 		fmt.Println("Task not found for ID:", id)
 		return
 	}
-	resp := common.TaskResult{
-		Output: task.Output,
-		Status: task.Status,
-		Error:  task.Error,
-	}
-	Encoder.Encode(resp)
+	Encoder.Encode(task)
 
 }

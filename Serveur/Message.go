@@ -1,12 +1,8 @@
 package main
 
 import (
-	"NVPROJET/common"
 	"encoding/json"
 	"log"
-	"os"
-
-	"os/exec"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -21,18 +17,7 @@ func (d *MyDelegate) NodeMeta(limit int) []byte {
 
 // le message recu  (envoye par un autre noed)
 func (d *MyDelegate) NotifyMsg(msg []byte) {
-	var t common.Task
-	if err := json.Unmarshal(msg, &t); err != nil {
-		log.Println("json.Unmarshal error:", err)
-		return
-	} // rasjouter focntion handle  au lieu deecrire direct
-	cmd := exec.Command(t.Command, t.Args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("command execution error: %v", err)
-	}
+
 }
 
 // message à envoyer quand on veut à tt le monde
@@ -70,6 +55,7 @@ func (e *MyEventDelegate) NotifyJoin(n *memberlist.Node) {
 	}
 	clusterState[n.Name] = s
 	classifyNode(n.Name, s)
+	mapAdresse[n.Name] = n.Addr.String()
 }
 
 // declahcé par moi quand qq un quit
@@ -79,6 +65,7 @@ func (e *MyEventDelegate) NotifyLeave(n *memberlist.Node) {
 	bucketCpu.remove(n.Name)
 	bucketAvg.remove(n.Name)
 	bucketLow.remove(n.Name)
+	delete(mapAdresse, n.Name)
 	log.Println("LEAVE:", n.Name)
 }
 

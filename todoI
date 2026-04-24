@@ -40,3 +40,14 @@
 
 
 // remplacer le tcp pour l'envoie des tache avec grpc car le resulat peut etre long 
+
+
+// dnas init modifier le tcp port de state avec .env voir chatgpt
+// et le http ou grpc aura besoin aussi du port ou l'adress ou pas ouf la quel est mieux comme methode?
+
+
+
+// tester le cas ou personne repond au probe envoyé
+
+
+// aussi le output de task ect dans la mm structure c'est pas ouf nn? 

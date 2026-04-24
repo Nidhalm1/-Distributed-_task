@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -33,9 +34,21 @@ type SubmitRequest struct {
 	EstimatedCPU int
 	EstimatedMem int
 }
+type Probe struct {
+	Estimatedmem int `json:"estimatedmem"`
+	Estimatedcpu int `json:"estimatedcpu"`
+}
+type ProbeResponse struct {
+	Accepted bool
+}
 
 type TaskResult struct {
 	Output string `json:"output"`
 	Status string `json:"status"`
 	Error  string `json:"error"`
+}
+
+type Envelope struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
 }

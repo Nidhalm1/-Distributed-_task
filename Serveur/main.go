@@ -16,9 +16,13 @@ func main() {
 	config = memberlist.DefaultLocalConfig() // prepare la config du nord son nom , port ect
 	// Récupère le port depuis les arguments du programme
 	port := 7946 // valeur par défaut
-	if len(os.Args) > 1 {
+	var serverPort int
+	if len(os.Args) > 2 {
 		if p, err := strconv.Atoi(os.Args[1]); err == nil {
 			port = p
+		}
+		if p, err := strconv.Atoi(os.Args[2]); err == nil {
+			serverPort = p
 		}
 	}
 	config.Name = "node" + strconv.Itoa(port)
@@ -39,12 +43,7 @@ func main() {
 	if port != 7946 { // si je suis pas le premier je rejoins
 		list.Join([]string{"127.0.0.1:7946"}) // essaie de rejoindre un cluster existant en se connectant à un node déjà présent
 	}
-	// choose a separate TCP server port to avoid conflicting with memberlist's bind port
-	serverPort := config.BindPort + 1
 	// safety: keep port in valid range; if overflow, try decrementing instead
-	if serverPort > 65535 {
-		serverPort = config.BindPort - 1
-	}
 	log.Println("Node:", config.BindPort, "started (tcp server on port", serverPort, ")")
 	go startTCPServer(serverPort)
 	go startWorker(list)
