@@ -10,13 +10,13 @@ import (
 )
 
 var config *memberlist.Config
+var serverPort int
 
 func main() {
 
 	config = memberlist.DefaultLocalConfig() // prepare la config du nord son nom , port ect
 	// Récupère le port depuis les arguments du programme
 	port := 7946 // valeur par défaut
-	var serverPort int
 	if len(os.Args) > 2 {
 		if p, err := strconv.Atoi(os.Args[1]); err == nil {
 			port = p

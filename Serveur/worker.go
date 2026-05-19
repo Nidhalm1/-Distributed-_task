@@ -37,7 +37,6 @@ func startWorker(list *memberlist.Memberlist) {
 					)
 					if err != nil {
 						fmt.Println("pas recu à se connecter au noeud aleatoire")
-
 						return
 					}
 
@@ -50,7 +49,12 @@ func startWorker(list *memberlist.Memberlist) {
 					decoder := json.NewDecoder(conn)
 
 					var probe = common.Probe{Estimatedmem: t.Estimatedmem, Estimatedcpu: t.Estimatedcpu}
-					encoder.Encode(probe)
+					data, _ := json.Marshal(probe)
+					env := common.Envelope{
+						Type: "Probe",
+						Data: data,
+					}
+					encoder.Encode(env)
 					var probeRep common.ProbeResponse
 					if err := decoder.Decode(&probeRep); err != nil {
 						return
@@ -80,12 +84,15 @@ func startWorker(list *memberlist.Memberlist) {
 					continue
 				}
 				encoder := json.NewEncoder(conn)
-				decoder := json.NewDecoder(conn)
-				encoder.Encode(t)
-				var taskResult common.TaskResult
-				decoder.Decode(&taskResult)
+				t.ResultPort = serverPort // le port sur le quel il contactera
+
+				data, _ := json.Marshal(t)
+				env := common.Envelope{
+					Type: "Task",
+					Data: data,
+				}
+				encoder.Encode(env)
 				conn.Close()
-				tasks[t.ID] = taskResult
 				continue
 			case <-time.After(300 * time.Millisecond):
 				fmt.Println("Aucun node dispo")

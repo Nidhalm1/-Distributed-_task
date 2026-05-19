@@ -51,7 +51,8 @@ func main() {
 			memStr := strings.TrimPrefix(parts[2], "mem=")
 			mem, err := strconv.Atoi(memStr)
 			submit := common.SubmitRequest{EstimatedCPU: cpu, EstimatedMem: mem, Command: parts[3], Args: parts[4:]}
-			encoder.Encode(submit)
+			data, _ := json.Marshal(submit)
+			encoder.Encode(common.Envelope{Type: "submit", Data: data})
 			var r common.Response
 			err = decoder.Decode(&r)
 			if err != nil {
@@ -71,7 +72,8 @@ func main() {
 				continue
 			}
 			result := common.Result{ID: parts[1]}
-			encoder.Encode(result)
+			data, _ := json.Marshal(result)
+			encoder.Encode(common.Envelope{Type: "result", Data: data})
 			var r common.TaskResult
 			err = decoder.Decode(&r) // ce qu'il m'envoie
 			if err != nil {
@@ -79,7 +81,7 @@ func main() {
 				return
 			}
 			tasks[result.ID] = &r
-			fmt.Println("ID recu", r.Status)
+			fmt.Println("etat ID recu", r.Status)
 		}
 	}
 }

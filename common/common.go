@@ -15,6 +15,8 @@ type Task struct {
 	CreatedAt    time.Time `json:"created_at"`
 	Estimatedmem int       `json:"estimatedmem"`
 	Estimatedcpu int       `json:"estimatedcpu"`
+	ResultPort   int       `json:"result_port"`
+	ResultAddr   string    `json:"result_addr"`
 }
 
 var tasks = make(map[string]*Task)
@@ -41,6 +43,7 @@ type ProbeResponse struct {
 }
 
 type TaskResult struct {
+	ID     string `json:"id"`
 	Output string `json:"output"`
 	Status string `json:"status"`
 	Error  string `json:"error"`
