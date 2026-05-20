@@ -1,49 +1,72 @@
-Example: using HashiCorp memberlist in Go
+## Compilation des programmes
 
-This small example shows how to create a memberlist node, join peers, list members and queue a broadcast.
+Compilez d'abord vos deux programmes pour générer les exécutables :
 
-Build
+```bash
+make
+```
 
-1. cd to the project directory:
+---
 
-   cd c:\Users\Mo\Desktop\nvProjet
+## 2. Lancement du Cluster (Les Serveurs)
 
-2. Fetch dependencies and build:
+Ouvrez plusieurs terminaux pour simuler votre cluster.
 
-   go mod tidy
-   go build -o memberlist-node
+**Terminal 1 : Lancement du Premier Nœud (Dispatcher)**  
+Ce nœud va créer le réseau (sur le port `7941`) et écouter les requêtes du client (sur le port `1234`).
 
-Run
+```bash
+./serveur.exe 7941 1234
+```
 
-Start two nodes (separate terminals):
+**Terminal 2 : Lancement d'un Nœud Worker**  
+Ce nœud (port `7942`) rejoint le cluster en contactant le premier nœud (`127.0.0.1:7941`). Il écoutera d'éventuels autres clients sur le port `1235`.
 
-Terminal 1:
+```bash
+./serveur.exe 7942 1235 127.0.0.1:7941
+```
 
-   .\memberlist-node.exe -name node1 -bind 127.0.0.1:7946 -http 8001
+> **Note :** L'affichage `client disconnected or decode error: EOF` dans les logs des serveurs est normal, c'est simplement la fin de la connexion rapide après les "probes" de vérification.
 
-Terminal 2 (join node1):
+---
 
-   .\memberlist-node.exe -name node2 -bind 127.0.0.1:7947 -join 127.0.0.1:7946 -http 8002
+## 3. Utilisation du Client
 
-Inspect members:
+Ouvrez un 3ème terminal pour lancer le client et connectez-le au premier serveur (port `1234`) :
 
-   curl http://localhost:8001/members
+```bash
+./client.exe localhost:1234
+```
 
-Queue a broadcast:
+Une fois dans le menu `>`, vous pouvez soumettre une commande et interroger son résultat.
 
-   curl http://localhost:8001/broadcast
+### Étape A : Soumettre une tâche
 
-Notes / Next steps
+Indiquez l'estimation CPU et RAM, puis la commande.  
+Par exemple, pour lister les fichiers (`ls -l`) :
 
-- Add encryption (pre-shared key) for gossip if you need confidentiality.
-- Implement a proper Delegate to store/merge user metadata.
-- Add tests and containerized examples for multi-node simulation.
+```
+> submit cpu=10 mem=15 ls -l
+ID recu 48db280b-8bcd-48a5-8aaf-9
+```
 
+Le dispatcher va automatiquement trouver un nœud disponible (ex : le nœud `7942`) et lui envoyer la tâche.
 
-go build -o memberlist-demo.exe
-.\memberlist-demo.exe 1059
+### Étape B : Récupérer le résultat
 
+Utilisez la commande `result` suivie de l'ID généré à l'étape précédente pour voir le retour de votre commande :
 
+```
+> result 48db280b-8bcd-48a5-8aaf-9
+etat ID recu total 26000
+drwxrwxrwx 1 nmoussa nmoussa      Clients
+-rwxrwxrwx 1 nmoussa nmoussa      Makefile
+-rwxrwxrwx 1 nmoussa nmoussa      README.md
+...
+```
 
-coté client :
-submit cpu=10 mem=20 ls -l
+Pour quitter le client :
+
+```
+> exit
+```
