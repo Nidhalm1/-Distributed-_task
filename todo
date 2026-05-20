@@ -10,3 +10,6 @@
 //faire en sorte de recevoir la task et la transfomrer en tant que taskI
 
 //recupere le retour de task et l'afficher si elle a un retourr
+
+
+//si jepeux la faire je la fais sinon comme avant ajouter nb de worker et ajouter une que pour les taskr recu des client car si y en a plusieur au mm temps alors c exxcuter au mm temps et renvoyer  c pas ouf 

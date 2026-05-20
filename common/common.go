@@ -19,8 +19,6 @@ type Task struct {
 	ResultAddr   string    `json:"result_addr"`
 }
 
-var tasks = make(map[string]*Task)
-
 type Result struct {
 	ID string `json:"id"`
 }
@@ -35,8 +33,9 @@ type SubmitRequest struct {
 	EstimatedMem int      `json:"estimated_mem"`
 }
 type Probe struct {
-	Estimatedmem int `json:"estimatedmem"`
-	Estimatedcpu int `json:"estimatedcpu"`
+	ID           string `json:"id"`
+	Estimatedmem int    `json:"estimatedmem"`
+	Estimatedcpu int    `json:"estimatedcpu"`
 }
 type ProbeResponse struct {
 	Accepted bool

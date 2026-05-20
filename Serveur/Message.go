@@ -13,7 +13,10 @@ type MyDelegate struct{}
 func (d *MyDelegate) NodeMeta(limit int) []byte {
 	stateMu.Lock()
 	defer stateMu.Unlock()
-	data, _ := json.Marshal(state) // convertir en json
+	newState := state
+	newState.CPU -= reservedCPU
+	newState.Memory -= reservedMEM
+	data, _ := json.Marshal(newState) // convertir en json
 	return data
 }
 

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"os/exec"
 	"sync"
 	"time"
 
@@ -23,7 +22,7 @@ func handleClient(conn net.Conn) {
 	for {
 		err := decoder.Decode(&env)
 		if err != nil {
-			fmt.Println("client disconnected or decode error:", err)
+			fmt.Println("client disconnected", err)
 			return
 		}
 		switch env.Type {
@@ -91,49 +90,22 @@ func handleTaskResult(taskresult common.TaskResult) {
 }
 
 func handleTask(task common.Task) {
-	cmd := exec.Command(task.Command, task.Args...)
-
-	output, err := cmd.CombinedOutput() // stdout + stderr ensemble
-
-	result := common.TaskResult{
-		ID:     task.ID,
-		Output: string(output),
-	}
-	if err != nil {
-		result.Status = "error"
-		result.Error = err.Error()
-	} else {
-		result.Status = "done"
-	}
-
-	// renvoyer le résultat au dispatcher
-	var addr string
-	if net.ParseIP(task.ResultAddr) != nil && net.ParseIP(task.ResultAddr).To4() == nil {
-		// IPv6
-		addr = fmt.Sprintf("[%s]:%d", task.ResultAddr, task.ResultPort)
-	} else {
-		// IPv4 or hostname
-		addr = fmt.Sprintf("%s:%d", task.ResultAddr, task.ResultPort)
-	}
-	fmt.Println("Envoi du résultat à l'adresse :", task.ResultPort)
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		fmt.Println("impossible de contacter le dispatcher")
-		return
-	}
-	defer conn.Close()
-
-	data, _ := json.Marshal(result)
-	env := common.Envelope{Type: "TaskResult", Data: data}
-	json.NewEncoder(conn).Encode(env)
-
+	taskReserved[task.ID] = true
+	execQueue <- task
 }
 
 func handleProbe(probe common.Probe) bool {
-	accepted := state.CPU >= probe.Estimatedcpu && state.Memory >= probe.Estimatedmem
+	accepted := state.CPU-reservedCPU >= probe.Estimatedcpu && state.Memory-reservedMEM >= probe.Estimatedmem
 	if accepted {
-		state.CPU -= probe.Estimatedcpu
-		state.Memory -= probe.Estimatedmem
+		reservedCPU += probe.Estimatedcpu
+		reservedMEM += probe.Estimatedmem
+		go func() {
+			time.Sleep(2 * time.Second) // si je recois pas apres 2s
+			if !taskReserved[probe.ID] {
+				reservedCPU -= probe.Estimatedcpu
+				reservedMEM -= probe.Estimatedmem
+			}
+		}()
 	}
 	return accepted
 }

@@ -6,131 +6,138 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os/exec"
 	"time"
-
-	"github.com/hashicorp/memberlist"
 )
 
-func startWorker(list *memberlist.Memberlist) {
-	for {
-		t := <-taskQueue
-		fmt.Printf("bucketMem: %d, bucketCpu: %d, bucketAvg: %d, bucketLow: %d\n",
-			len(bucketMem.nodes), len(bucketCpu.nodes), len(bucketAvg.nodes), len(bucketLow.nodes))
-		var condidate []string
-		if t.Estimatedmem >= 8000 {
-			condidate = getIdeal(bucketMem, t)
-		} else if t.Estimatedcpu >= 4000 {
-			condidate = getIdeal(bucketCpu, t)
-			if len(condidate) == 0 {
-				condidate = getIdeal(bucketMem, t)
-			}
-		} else if t.Estimatedcpu >= 2000 && t.Estimatedmem >= 2000 {
-			condidate = getIdeal(bucketAvg, t)
-			if len(condidate) == 0 {
-				condidate = getIdeal(bucketCpu, t)
-				if len(condidate) == 0 {
-					condidate = getIdeal(bucketMem, t)
+func startClientWorker(n int) {
+	for i := 0; i < n; i++ {
+		go func() {
+			for {
+				t := <-taskQueue
+				fmt.Printf("bucketMem: %d, bucketCpu: %d, bucketAvg: %d, bucketLow: %d\n",
+					len(bucketMem.nodes), len(bucketCpu.nodes), len(bucketAvg.nodes), len(bucketLow.nodes))
+				var condidate []string
+				if caniExec(t) {
+					continue
 				}
-			}
-		} else {
-			condidate = getIdeal(bucketLow, t)
-			if len(condidate) == 0 {
-				condidate = getIdeal(bucketAvg, t)
-				if len(condidate) == 0 {
+				if t.Estimatedmem >= 8000 {
+					condidate = getIdeal(bucketMem, t)
+				} else if t.Estimatedcpu >= 4000 {
 					condidate = getIdeal(bucketCpu, t)
 					if len(condidate) == 0 {
 						condidate = getIdeal(bucketMem, t)
 					}
-				}
-			}
-		}
-		if len(condidate) > 0 {
-			ctx, cancel := context.WithCancel(context.Background())
-			winnerChan := make(chan string, 1)
-			for _, node := range condidate {
-				go func(n string) {
-					var addr = mapAdresse[n]
-					fmt.Println("Trying node:", n, "with address:", addr)
-					var port = clusterState[n].PortTcp
-					conn, err := net.DialTimeout("tcp",
-						net.JoinHostPort(addr, fmt.Sprintf("%d", port)),
-						200*time.Millisecond,
-					)
-					if err != nil {
-						fmt.Println("pas recu à se connecter au noeud aleatoire")
-						return
-					}
-
-					go func() {
-						<-ctx.Done()
-						conn.Close()
-					}()
-
-					encoder := json.NewEncoder(conn)
-					decoder := json.NewDecoder(conn)
-
-					var probe = common.Probe{Estimatedmem: t.Estimatedmem, Estimatedcpu: t.Estimatedcpu}
-					data, _ := json.Marshal(probe)
-					env := common.Envelope{
-						Type: "Probe",
-						Data: data,
-					}
-					encoder.Encode(env)
-					var probeRep common.ProbeResponse
-					if err := decoder.Decode(&probeRep); err != nil {
-						return
-					}
-					if probeRep.Accepted {
-						//arreter les decodes des autres
-						select {
-						case winnerChan <- n:
-							cancel() // stop les autres
-						default:
+				} else if t.Estimatedcpu >= 2000 && t.Estimatedmem >= 2000 {
+					condidate = getIdeal(bucketAvg, t)
+					if len(condidate) == 0 {
+						condidate = getIdeal(bucketCpu, t)
+						if len(condidate) == 0 {
+							condidate = getIdeal(bucketMem, t)
 						}
 					}
-				}(node)
-			}
-			select { // att jusqu'a un de ses evenemtn
-			case chosen := <-winnerChan:
-				cancel()
-				fmt.Println("Node choisi:", chosen)
-				var addr = mapAdresse[chosen]
-				var port = clusterState[chosen].PortTcp
-				conn, err := net.DialTimeout("tcp",
-					net.JoinHostPort(addr, fmt.Sprintf("%d", port)),
-					200*time.Millisecond,
-				)
-				if err != nil {
-					fmt.Println("échec connexion au node choisi")
+				} else {
+					condidate = getIdeal(bucketLow, t)
+					if len(condidate) == 0 {
+						condidate = getIdeal(bucketAvg, t)
+						if len(condidate) == 0 {
+							condidate = getIdeal(bucketCpu, t)
+							if len(condidate) == 0 {
+								condidate = getIdeal(bucketMem, t)
+							}
+						}
+					}
+				}
+				if len(condidate) > 0 {
+					ctx, cancel := context.WithCancel(context.Background())
+					winnerChan := make(chan string, 1)
+					for _, node := range condidate {
+						go func(n string) {
+							var addr = mapAdresse[n]
+							fmt.Println("Trying node:", n, "with address:", addr)
+							var port = clusterState[n].PortTcp
+							conn, err := net.DialTimeout("tcp",
+								net.JoinHostPort(addr, fmt.Sprintf("%d", port)),
+								200*time.Millisecond,
+							)
+							if err != nil {
+								fmt.Println("pas recu à se connecter au noeud aleatoire")
+								return
+							}
+
+							go func() {
+								<-ctx.Done()
+								conn.Close()
+							}()
+
+							encoder := json.NewEncoder(conn)
+							decoder := json.NewDecoder(conn)
+
+							var probe = common.Probe{ID: t.ID, Estimatedmem: t.Estimatedmem, Estimatedcpu: t.Estimatedcpu}
+							data, _ := json.Marshal(probe)
+							env := common.Envelope{
+								Type: "Probe",
+								Data: data,
+							}
+							encoder.Encode(env)
+							var probeRep common.ProbeResponse
+							if err := decoder.Decode(&probeRep); err != nil {
+								return
+							}
+							if probeRep.Accepted {
+								//arreter les decodes des autres
+								select {
+								case winnerChan <- n:
+									cancel() // stop les autres
+								default:
+								}
+							}
+						}(node)
+					}
+					select { // att jusqu'a un de ses evenemtn
+					case chosen := <-winnerChan:
+						cancel()
+						fmt.Println("Node choisi:", chosen)
+						var addr = mapAdresse[chosen]
+						var port = clusterState[chosen].PortTcp
+						conn, err := net.DialTimeout("tcp",
+							net.JoinHostPort(addr, fmt.Sprintf("%d", port)),
+							200*time.Millisecond,
+						)
+						if err != nil {
+							fmt.Println("échec connexion au node choisi")
+							continue
+						}
+						encoder := json.NewEncoder(conn)
+						t.ResultPort = serverPort // le port sur le quel il contactera
+						t.ResultAddr = mapAdresse[config.Name]
+						data, _ := json.Marshal(t)
+						env := common.Envelope{
+							Type: "Task",
+							Data: data,
+						}
+						encoder.Encode(env)
+						conn.Close()
+						continue
+					case <-time.After(300 * time.Millisecond):
+						fmt.Println("Aucun node dispo")
+						cancel()
+						go func() {
+							taskQueue <- t
+						}()
+						fmt.Println("je retente plus tard")
+					}
+				} else { // len ==0
+					fmt.Println("charge lourde pour ce system aucun node dispo pour elle , donc attendez")
+					go func() {
+						taskQueue <- t
+					}()
 					continue
 				}
-				encoder := json.NewEncoder(conn)
-				t.ResultPort = serverPort // le port sur le quel il contactera
-				t.ResultAddr = mapAdresse[config.Name]
-				data, _ := json.Marshal(t)
-				env := common.Envelope{
-					Type: "Task",
-					Data: data,
-				}
-				encoder.Encode(env)
-				conn.Close()
-				continue
-			case <-time.After(300 * time.Millisecond):
-				fmt.Println("Aucun node dispo")
-				cancel()
-				go func() {
-					taskQueue <- t
-				}()
-				fmt.Println("je retente plus tard")
 			}
-		} else { // len ==0
-			fmt.Println("charge lourde pour ce system aucun node dispo pour elle , donc attendez")
-			go func() {
-				taskQueue <- t
-			}()
-			continue
-		}
+		}()
 	}
+
 }
 
 func getIdeal(bucket *Bucket, t common.Task) []string {
@@ -162,4 +169,24 @@ func getIdeal(bucket *Bucket, t common.Task) []string {
 		}
 	}
 	return condidate
+}
+
+func caniExec(task common.Task) bool {
+	if state.CPU-reservedCPU >= task.Estimatedcpu && state.Memory-reservedMEM >= task.Estimatedmem {
+		cmd := exec.Command(task.Command, task.Args...)
+		output, err := cmd.CombinedOutput() // stdout + stderr ensemble
+		result := common.TaskResult{
+			ID:     task.ID,
+			Output: string(output),
+		}
+		if err != nil {
+			result.Status = "error"
+			result.Error = err.Error()
+		} else {
+			result.Status = "done"
+		}
+		tasks[task.ID] = result
+		return true
+	}
+	return false
 }

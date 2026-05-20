@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 
 	"github.com/hashicorp/memberlist"
@@ -65,7 +66,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	if addrJoin != "" {
 
 		_, err := list.Join([]string{
@@ -91,8 +91,9 @@ func main() {
 	)
 	mapAdresse[config.Name] = config.AdvertiseAddr
 	go startTCPServer(serverPort)
-	go startWorker(list)
+	go startClientWorker(runtime.NumCPU() * 2)
 	go ask_values(list)
+	go startExecWorkers(runtime.NumCPU() * 2)
 
 	select {}
 }
