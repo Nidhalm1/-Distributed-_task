@@ -11,6 +11,8 @@ type MyDelegate struct{}
 
 // les message statiques appelé par celui qui rejoin
 func (d *MyDelegate) NodeMeta(limit int) []byte {
+	stateMu.Lock()
+	defer stateMu.Unlock()
 	data, _ := json.Marshal(state) // convertir en json
 	return data
 }
@@ -48,6 +50,10 @@ type MyEventDelegate struct{}
 
 // declahcé par moi quand qq un join
 func (e *MyEventDelegate) NotifyJoin(n *memberlist.Node) {
+	if n.Name == config.Name {
+		return
+	}
+
 	var s NodeState
 	if err := json.Unmarshal(n.Meta, &s); err != nil {
 		log.Println("json.Unmarshal error:", err)
@@ -71,6 +77,10 @@ func (e *MyEventDelegate) NotifyLeave(n *memberlist.Node) {
 
 // declaché pr moi quand le message recu par NodeMeta est different de l'ancien
 func (e *MyEventDelegate) NotifyUpdate(n *memberlist.Node) {
+	if n.Name == config.Name {
+		return
+	}
+
 	var s NodeState
 	if err := json.Unmarshal(n.Meta, &s); err != nil {
 		log.Println("json.Unmarshal error:", err)
@@ -78,7 +88,7 @@ func (e *MyEventDelegate) NotifyUpdate(n *memberlist.Node) {
 	}
 	clusterState[n.Name] = s
 	classifyNode(n.Name, s)
-	log.Println("UPDATE:", n.Name)
+	mapAdresse[n.Name] = n.Addr.String()
 }
 
 func classifyNode(name string, s NodeState) {
@@ -91,12 +101,15 @@ func classifyNode(name string, s NodeState) {
 	bucketAvg.remove(name)
 	bucketLow.remove(name)
 	// 2. On le range dans le bon bucket
-	if s.Memory >= 8000 {
+	if s.Memory >= 16000 {
 		bucketMem.add(name)
-	} else if s.CPU >= 4000 {
+
+	} else if s.CPU >= 80 {
 		bucketCpu.add(name)
-	} else if s.CPU >= 2000 && s.Memory >= 2000 {
+
+	} else if s.CPU >= 40 && s.Memory >= 4000 {
 		bucketAvg.add(name)
+
 	} else {
 		bucketLow.add(name)
 	}

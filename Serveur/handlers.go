@@ -43,8 +43,6 @@ func handleClient(conn net.Conn) {
 		case "Task": //serveur
 			var task common.Task
 			json.Unmarshal(env.Data, &task)
-			host, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
-			task.ResultAddr = host
 			go handleTask(task)
 		case "Probe": //serveur
 			stateMu.Lock()
@@ -109,7 +107,16 @@ func handleTask(task common.Task) {
 	}
 
 	// renvoyer le résultat au dispatcher
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", task.ResultAddr, task.ResultPort))
+	var addr string
+	if net.ParseIP(task.ResultAddr) != nil && net.ParseIP(task.ResultAddr).To4() == nil {
+		// IPv6
+		addr = fmt.Sprintf("[%s]:%d", task.ResultAddr, task.ResultPort)
+	} else {
+		// IPv4 or hostname
+		addr = fmt.Sprintf("%s:%d", task.ResultAddr, task.ResultPort)
+	}
+	fmt.Println("Envoi du résultat à l'adresse :", task.ResultPort)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		fmt.Println("impossible de contacter le dispatcher")
 		return

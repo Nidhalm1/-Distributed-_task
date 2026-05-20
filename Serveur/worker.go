@@ -106,7 +106,7 @@ func startWorker(list *memberlist.Memberlist) {
 				}
 				encoder := json.NewEncoder(conn)
 				t.ResultPort = serverPort // le port sur le quel il contactera
-
+				t.ResultAddr = mapAdresse[config.Name]
 				data, _ := json.Marshal(t)
 				env := common.Envelope{
 					Type: "Task",

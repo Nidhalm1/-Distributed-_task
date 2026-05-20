@@ -67,7 +67,7 @@ func main() {
 				fmt.Println("Usage: result <id>")
 				continue
 			}
-			if _, ok := tasks[parts[1]]; !ok { /*si id existe*/
+			if _, ok := tasks[parts[1]]; !ok { /*si id existe pas en continue*/
 				fmt.Println("ID inconnu :", parts[1])
 				continue
 			}
@@ -81,7 +81,7 @@ func main() {
 				return
 			}
 			tasks[result.ID] = &r
-			fmt.Println("etat ID recu", r.Status)
+			fmt.Println("etat ID recu", r.Output)
 		}
 	}
 }

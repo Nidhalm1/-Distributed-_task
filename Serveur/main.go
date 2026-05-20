@@ -14,40 +14,86 @@ var serverPort int
 
 func main() {
 
-	config = memberlist.DefaultLocalConfig() // prepare la config du nord son nom , port ect
-	// Récupère le port depuis les arguments du programme
-	port := 7946 // valeur par défaut
-	if len(os.Args) > 2 {
+	config = memberlist.DefaultLocalConfig()
+
+	port := 7946
+	serverPort = 1234
+	addrJoin := ""
+
+	// gossip port
+	if len(os.Args) > 1 {
 		if p, err := strconv.Atoi(os.Args[1]); err == nil {
 			port = p
 		}
+	}
+
+	// tcp/grpc port
+	if len(os.Args) > 2 {
 		if p, err := strconv.Atoi(os.Args[2]); err == nil {
 			serverPort = p
+			state.PortTcp = p
 		}
 	}
+
+	// node à rejoindre
+	if len(os.Args) > 3 {
+		addrJoin = os.Args[3]
+	}
+
 	config.Name = "node" + strconv.Itoa(port)
 
 	config.BindPort = port
 	config.AdvertisePort = port
 
 	config.Delegate = &MyDelegate{}
-	config.Events = &MyEventDelegate{} // cree un objet de Mydelegate qui sert pour quel info envoyé plus tard
+	config.Events = &MyEventDelegate{}
 
-	nullFile, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0) // redireger la sortie des logs vers fichier nul
-	config.Logger = log.New(nullFile, "", 0)
+	nullFile, _ := os.OpenFile(
+		os.DevNull,
+		os.O_WRONLY,
+		0,
+	)
 
-	list, err := memberlist.Create(config) // démarre le protocole de communication entre les nodes et renvoie mon objet avec lequel je vais taffer
+	config.Logger = log.New(
+		nullFile,
+		"",
+		0,
+	)
+
+	list, err := memberlist.Create(config)
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	if port != 7946 { // si je suis pas le premier je rejoins
-		list.Join([]string{"127.0.0.1:7946"}) // essaie de rejoindre un cluster existant en se connectant à un node déjà présent
+
+	if addrJoin != "" {
+
+		_, err := list.Join([]string{
+			addrJoin,
+		})
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println(
+			"Joined cluster via",
+			addrJoin,
+		)
 	}
-	// safety: keep port in valid range; if overflow, try decrementing instead
-	log.Println("Node:", config.BindPort, "started (tcp server on port", serverPort, ")")
+
+	log.Println(
+		"Node:",
+		config.BindPort,
+		"started (tcp server on port",
+		serverPort,
+		")",
+	)
+	mapAdresse[config.Name] = config.AdvertiseAddr
 	go startTCPServer(serverPort)
 	go startWorker(list)
 	go ask_values(list)
+
 	select {}
 }
 func startTCPServer(serverPort int) {
