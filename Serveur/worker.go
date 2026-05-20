@@ -14,15 +14,35 @@ import (
 func startWorker(list *memberlist.Memberlist) {
 	for {
 		t := <-taskQueue
+		fmt.Printf("bucketMem: %d, bucketCpu: %d, bucketAvg: %d, bucketLow: %d\n",
+			len(bucketMem.nodes), len(bucketCpu.nodes), len(bucketAvg.nodes), len(bucketLow.nodes))
 		var condidate []string
 		if t.Estimatedmem >= 8000 {
 			condidate = getIdeal(bucketMem, t)
 		} else if t.Estimatedcpu >= 4000 {
 			condidate = getIdeal(bucketCpu, t)
+			if len(condidate) == 0 {
+				condidate = getIdeal(bucketMem, t)
+			}
 		} else if t.Estimatedcpu >= 2000 && t.Estimatedmem >= 2000 {
 			condidate = getIdeal(bucketAvg, t)
+			if len(condidate) == 0 {
+				condidate = getIdeal(bucketCpu, t)
+				if len(condidate) == 0 {
+					condidate = getIdeal(bucketMem, t)
+				}
+			}
 		} else {
 			condidate = getIdeal(bucketLow, t)
+			if len(condidate) == 0 {
+				condidate = getIdeal(bucketAvg, t)
+				if len(condidate) == 0 {
+					condidate = getIdeal(bucketCpu, t)
+					if len(condidate) == 0 {
+						condidate = getIdeal(bucketMem, t)
+					}
+				}
+			}
 		}
 		if len(condidate) > 0 {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -30,6 +50,7 @@ func startWorker(list *memberlist.Memberlist) {
 			for _, node := range condidate {
 				go func(n string) {
 					var addr = mapAdresse[n]
+					fmt.Println("Trying node:", n, "with address:", addr)
 					var port = clusterState[n].PortTcp
 					conn, err := net.DialTimeout("tcp",
 						net.JoinHostPort(addr, fmt.Sprintf("%d", port)),

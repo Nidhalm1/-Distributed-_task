@@ -45,8 +45,8 @@ func handleClient(conn net.Conn) {
 			json.Unmarshal(env.Data, &task)
 			host, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 			task.ResultAddr = host
-			handleTask(task)
-		case "probe": //serveur
+			go handleTask(task)
+		case "Probe": //serveur
 			stateMu.Lock()
 			var probe common.Probe
 			json.Unmarshal(env.Data, &probe)

@@ -29,10 +29,10 @@ type Response struct {
 }
 
 type SubmitRequest struct {
-	Command      string
-	Args         []string
-	EstimatedCPU int
-	EstimatedMem int
+	Command      string   `json:"command"`
+	Args         []string `json:"args"`
+	EstimatedCPU int      `json:"estimated_cpu"`
+	EstimatedMem int      `json:"estimated_mem"`
 }
 type Probe struct {
 	Estimatedmem int `json:"estimatedmem"`
