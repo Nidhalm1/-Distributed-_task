@@ -172,6 +172,7 @@ func getIdeal(bucket *Bucket, t common.Task) []string {
 }
 
 func caniExec(task common.Task) bool {
+	//utilise mutex car ca se trouve que value modife
 	if state.CPU-reservedCPU >= task.Estimatedcpu && state.Memory-reservedMEM >= task.Estimatedmem {
 		cmd := exec.Command(task.Command, task.Args...)
 		output, err := cmd.CombinedOutput() // stdout + stderr ensemble
