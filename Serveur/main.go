@@ -47,8 +47,7 @@ func main() {
 	log.Println("Node:", config.BindPort, "started (tcp server on port", serverPort, ")")
 	go startTCPServer(serverPort)
 	go startWorker(list)
-	//go ask_values()
-	//go print_values()
+	go ask_values(list)
 	select {}
 }
 func startTCPServer(serverPort int) {

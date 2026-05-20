@@ -9,7 +9,7 @@ import (
 
 type MyDelegate struct{}
 
-// les message statiques
+// les message statiques appelé par celui qui rejoin
 func (d *MyDelegate) NodeMeta(limit int) []byte {
 	data, _ := json.Marshal(state) // convertir en json
 	return data
@@ -83,11 +83,13 @@ func (e *MyEventDelegate) NotifyUpdate(n *memberlist.Node) {
 
 func classifyNode(name string, s NodeState) {
 	// 1. On le supprime de TOUS les buckets par sécurité (O(1), très rapide)
+	if name == config.Name {
+		return
+	}
 	bucketMem.remove(name)
 	bucketCpu.remove(name)
 	bucketAvg.remove(name)
 	bucketLow.remove(name)
-
 	// 2. On le range dans le bon bucket
 	if s.Memory >= 8000 {
 		bucketMem.add(name)
