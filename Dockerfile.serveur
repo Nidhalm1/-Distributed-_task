@@ -1,0 +1,12 @@
+FROM golang:1.24-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY Serveur/ ./Serveur/
+COPY common/ ./common/
+RUN go build -o serveur ./Serveur
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/serveur .
+CMD ["./serveur"]
