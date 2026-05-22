@@ -3,6 +3,7 @@ package main
 import (
 	"NVPROJET/common"
 	"math/rand"
+	"sync"
 )
 
 type NodeState struct {
@@ -19,8 +20,10 @@ var clusterState = make(map[string]NodeState)
 
 var mapAdresse = make(map[string]string)
 
-var taskQueue = make(chan common.Task, 100) //thread safe deja
-var execQueue = make(chan common.Task, 100) //thread safe deja
+var taskQueue = make(chan common.Task, 100)     //thread safe deja
+var execQueue = make(chan common.Task, 100)     //thread safe deja
+var taskQueueMap = make(map[string]common.Task) //pour la migration
+var taskQueueMapMu sync.Mutex                   //pour la migration
 
 var tasks = make(map[string]common.TaskResult)
 
