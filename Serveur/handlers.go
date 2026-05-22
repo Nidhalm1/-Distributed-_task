@@ -4,6 +4,7 @@ import (
 	"NVPROJET/common"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -71,6 +72,11 @@ func handleSubmit(encoder *json.Encoder, requestType common.SubmitRequest) {
 	taskQueue <- t
 	encoder.Encode(resp)
 	fmt.Println("Task reçue:", t.Command, t.Args)
+
+	/// on va mettre à jour notre file de task chez tous les serveurs:
+	log.Printf("%s: broadcast la ADD d'une task\n", config.Name)
+	go broadcast_addTask(t)
+	///
 }
 
 func handleResult(Encoder *json.Encoder, resultRequest common.Result) {
