@@ -3,11 +3,20 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"sync"
 
 	"github.com/hashicorp/memberlist"
 )
 
 type MyDelegate struct{}
+
+// pour la migration;
+var (
+	electionDone = false //nous garantie que l'on ne fera pas 2 fois la demande de migration ET que le 1er serveur ne lance pas de leader election
+	electionMu   sync.Mutex
+)
+
+///
 
 // les message statiques appelé par celui qui rejoin
 func (d *MyDelegate) NodeMeta(limit int) []byte {
@@ -47,6 +56,18 @@ func (d *MyDelegate) MergeRemoteState(buf []byte, join bool) {
 		clusterState[name] = state
 		classifyNode(name, state)
 	}
+
+	electionMu.Lock()
+	defer electionMu.Unlock()
+
+	if electionDone {
+		return
+	}
+
+	electionDone = true
+
+	//tous les noeuds sont connu, on peut lancer la leader election pour la migration:
+	go broadcast_election()
 }
 
 type MyEventDelegate struct{}

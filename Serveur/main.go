@@ -80,6 +80,8 @@ func main() {
 			"Joined cluster via",
 			addrJoin,
 		)
+	} else {
+		electionDone = true //pour empeche le 1er serveur dans lancer le leader election
 	}
 
 	log.Println(
@@ -90,6 +92,8 @@ func main() {
 		")",
 	)
 	mapAdresse[config.Name] = config.AdvertiseAddr
+
+	go startServerTask(state.PortTcpDataTask)
 	go startTCPServer(serverPort)
 	go startClientWorker(runtime.NumCPU() * 2)
 	go ask_values(list)

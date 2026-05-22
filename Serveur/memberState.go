@@ -3,14 +3,16 @@ package main
 import (
 	"NVPROJET/common"
 	"math/rand"
+	"sync"
 )
 
 type NodeState struct {
-	Load    int `json:"load"`
-	CPU     int `json:"cpu"`
-	Memory  int `json:"memory"`
-	Tasks   int `json:"tasks"`
-	PortTcp int `json:"port"`
+	Load            int `json:"load"`
+	CPU             int `json:"cpu"`
+	Memory          int `json:"memory"`
+	Tasks           int `json:"tasks"`
+	PortTcp         int `json:"port"`
+	PortTcpDataTask int `json:"port_task"`
 }
 
 var state NodeState
@@ -18,8 +20,10 @@ var clusterState = make(map[string]NodeState)
 
 var mapAdresse = make(map[string]string)
 
-var taskQueue = make(chan common.Task, 100) //thread safe deja
-var execQueue = make(chan common.Task, 100) //thread safe deja
+var taskQueue = make(chan common.Task, 100)     //thread safe deja
+var execQueue = make(chan common.Task, 100)     //thread safe deja
+var taskQueueMap = make(map[string]common.Task) //pour la migration
+var taskQueueMapMu sync.Mutex                   //pour la migration
 
 var tasks = make(map[string]common.TaskResult)
 
@@ -33,4 +37,10 @@ func init() {
 	state.CPU = rand.Int() * 100.0
 	state.Memory = rand.Int() * 32.0
 	state.Tasks = rand.Intn(20) + 1
+	for { //cherche un port different de PortTcp
+		state.PortTcpDataTask = 1024 + rand.Intn(65535-1024)
+		if state.PortTcpDataTask != state.PortTcp {
+			break
+		}
+	}
 }

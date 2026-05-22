@@ -4,6 +4,7 @@ import (
 	"NVPROJET/common"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -68,9 +69,19 @@ func handleSubmit(encoder *json.Encoder, requestType common.SubmitRequest) {
 	var resp common.Response = common.Response{
 		ID: t.ID,
 	}
+	taskQueueMapMu.Lock()
+	taskQueueMap[t.ID] = t
+	taskQueueMapMu.Unlock()
+
 	taskQueue <- t
+
 	encoder.Encode(resp)
 	fmt.Println("Task reçue:", t.Command, t.Args)
+
+	/// on va mettre à jour notre file de task chez tous les serveurs:
+	log.Printf("%s: broadcast suite à l'ajout d'une task d'une task\n", config.Name)
+	go broadcastMyTasks()
+	///
 }
 
 func handleResult(Encoder *json.Encoder, resultRequest common.Result) {
