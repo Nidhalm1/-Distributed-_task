@@ -31,6 +31,9 @@ var (
 	known_ids                  = make(map[string]int)
 	known_idsMu                sync.Mutex
 	nbr_serveur_attente_de_rep int
+
+	electionTimerDone = false
+	electionTimerMu   sync.Mutex
 )
 
 type ElectionMessage struct {
@@ -40,13 +43,13 @@ type ElectionMessage struct {
 
 // pour les autres serveurs:
 func recv_election(msg ElectionMessage) {
-	fmt.Println("Election: demande de vote recu chez", config.Name, "-", mapAdresse[msg.ID_envoyeur], clusterState[msg.ID_envoyeur].PortTcpDataTask)
+	log.Println("Election: demande de vote recu chez", config.Name, "-", mapAdresse[msg.ID_envoyeur], ":", clusterState[msg.ID_envoyeur].PortTcpDataTask)
 
 	target := fmt.Sprintf("%s:%d", mapAdresse[msg.ID_envoyeur], clusterState[msg.ID_envoyeur].PortTcpDataTask)
 	conn, err := net.Dial("tcp", target)
 
 	if err != nil {
-		fmt.Println("Erreur connexion election recv_election():", err)
+		log.Println("Erreur connexion election recv_election():", err)
 		return
 	}
 
@@ -83,7 +86,9 @@ func recv_election(msg ElectionMessage) {
 // initiation: le serveur envoie son id à tous les atres serveurs
 func broadcast_election() {
 
-	time.Sleep(6 * time.Second)                          //on se laisse le temps de se mettre en route
+	electionTimerDone = false
+
+	time.Sleep(3 * time.Second)                          //on se laisse le temps de se mettre en route
 	nbr_serveur_attente_de_rep = (len(clusterState) - 1) //"-1" car on est present dans la liste
 
 	msg := ElectionMessage{
@@ -110,7 +115,7 @@ func broadcast_election() {
 		target := fmt.Sprintf("%s:%d", mapAdresse[nodeName], node.PortTcpDataTask)
 		conn, err := net.Dial("tcp", target)
 		if err != nil {
-			fmt.Println("Erreur connexion election broadcast_election(), ajout dans la liste des secondes chances:", err)
+			log.Println("Erreur connexion election broadcast_election():", err)
 			nbr_serveur_attente_de_rep--
 			continue
 		}
@@ -119,23 +124,46 @@ func broadcast_election() {
 		conn.Close()
 	}
 
-	fmt.Println("Election: FIn du broadcast sur tous les serveur. J'attends : ", nbr_serveur_attente_de_rep)
+	// Lancer le timer — si electionTimerDone n'est pas true au bout de 10 secondes, on appelle choixLeader
+	go func() {
+		time.Sleep(10 * time.Second)
+		electionTimerMu.Lock()
+		defer electionTimerMu.Unlock()
+		if !electionTimerDone {
+			log.Println("Election: timeout, je prends la décision avec les réponses reçues")
+			choixLeader()
+		}
+	}()
+
+	log.Println("Election: Fin du broadcast sur tous les serveur. J'attends : ", nbr_serveur_attente_de_rep)
 }
 
 // on recoit les reponse à notre demande:
 func handleElection(msg ElectionMessage) {
-	fmt.Println("Election: reponse à notre demande de vote recu :", config.Name)
+	electionTimerMu.Lock()
+	if electionTimerDone == true { //cette reponse a été recu trop tardivement
+		return
+	}
+
+	log.Println("Election: reponse à notre demande de vote recu :", config.Name)
 	known_idsMu.Lock()
 	known_ids[msg.ID_envoyeur] = msg.Version_enregistre
 	total := len(known_ids)
 	known_idsMu.Unlock()
 
-	fmt.Printf("Election: reçu rep. de %s (%d connus sur %d)______________________________________________________________________________________\n",
+	log.Printf("Election: reçu rep. de %s (%d connus sur %d)\n",
 		msg.ID_envoyeur, total, nbr_serveur_attente_de_rep)
 
 	// PHASE 3 — Tous les IDs reçus → calculer le max
-	if total == nbr_serveur_attente_de_rep { //-1 car le serveur est lui même present dans la liste
+	if total == nbr_serveur_attente_de_rep {
+
+		//on retire le timer:
+		electionTimerDone = true
+		electionTimerMu.Unlock()
+		//
 		choixLeader()
+	} else {
+		electionTimerMu.Unlock()
 	}
 }
 
@@ -153,9 +181,9 @@ func choixLeader() {
 
 	//Résultat
 	if leader == config.Name { //cas où aucune version n'a été envoyer aux autres:
-		fmt.Println("Election: Je suis le chef ! Je commence imediatement mes taches.")
+		log.Println("Election: Je suis le chef ! Je commence imediatement mes taches.")
 	} else {
-		fmt.Printf("Election: Le chef est : %s. Je lui demande la liste de mes taches.\n", leader)
+		log.Printf("Election: Le chef est : %s. Je lui demande la liste de mes taches.\n", leader)
 
 		// on envoie un message pour demander la liste
 		target := fmt.Sprintf("%s:%d",
@@ -165,7 +193,7 @@ func choixLeader() {
 
 		conn, err := net.Dial("tcp", target)
 		if err != nil {
-			fmt.Println("Erreur connexion election choixLeader():", err)
+			log.Println("Erreur connexion election choixLeader():", err)
 			return
 		}
 		defer conn.Close()
@@ -176,7 +204,7 @@ func choixLeader() {
 
 		data, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("Erreur marshal:", err)
+			log.Println("Erreur marshal:", err)
 			return
 		}
 
@@ -187,26 +215,26 @@ func choixLeader() {
 
 		err = json.NewEncoder(conn).Encode(env)
 		if err != nil {
-			fmt.Println("Erreur envoi:", err)
+			log.Println("Erreur envoi:", err)
 			return
 		}
 
 		// Attente de la réponse
 		var envRep common.Envelope
 		if err = json.NewDecoder(conn).Decode(&envRep); err != nil {
-			fmt.Println("Erreur lecture enveloppe réponse:", err)
+			log.Println("Erreur lecture enveloppe réponse:", err)
 			return
 		}
 
 		var rep MessageTaskList
 		if err = json.Unmarshal(envRep.Data, &rep); err != nil {
-			fmt.Println("Erreur décodage MessageTaskList:", err)
+			log.Println("Erreur décodage MessageTaskList:", err)
 			return
 		}
 
 		handleRecvTasks(rep)
 
-		fmt.Println("Fin de la migration de :", config.Name)
+		log.Println("Fin de la migration de :", config.Name)
 
 	}
 }
