@@ -16,6 +16,7 @@ func startClientWorker(n int) {
 		go func() {
 			for {
 				t := <-taskQueue
+
 				fmt.Printf("bucketMem: %d, bucketCpu: %d, bucketAvg: %d, bucketLow: %d\n",
 					len(bucketMem.nodes), len(bucketCpu.nodes), len(bucketAvg.nodes), len(bucketLow.nodes))
 				var condidate []string
@@ -120,9 +121,13 @@ func startClientWorker(n int) {
 						encoder.Encode(env)
 						conn.Close()
 
+						taskQueueMapMu.Lock()
+						delete(taskQueueMap, t.ID)
+						taskQueueMapMu.Unlock()
+
 						/// on va mettre à jour notre file de task chez tous les serveurs:
 						log.Printf("%s: broadcast la SUPP d'une task\n", config.Name)
-						go broadcast_suppTask(t)
+						go broadcastMyTasks()
 						///
 
 						continue
