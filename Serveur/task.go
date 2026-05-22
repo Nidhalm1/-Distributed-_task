@@ -20,6 +20,8 @@ var (
 	versionMu           sync.Mutex
 	others_tasks_list   = make(map[string]VersionedTasks)
 	others_tasks_listMu sync.RWMutex
+
+	boradcastMutex sync.RWMutex //Même si cela baisse les performances, il vaut mieux preserver un "version_actuel" coherent en utilisant fifo plutôt que sa valeur
 )
 
 type MessageMajTask struct {
@@ -103,10 +105,6 @@ func handleMajdTask(msg MessageMajTask) {
 	others_tasks_listMu.Lock()
 	defer others_tasks_listMu.Unlock()
 
-	if others_tasks_list[msg.ID_envoyeur].Version >= msg.Version { //on a déjà recu une version plus recente !
-		return
-	}
-
 	// si nouvelle envoyeur
 	if _, exists := others_tasks_list[msg.ID_envoyeur]; !exists {
 
@@ -133,6 +131,8 @@ func handleMajdTask(msg MessageMajTask) {
 
 // send:
 func broadcastToNodes(msg common.Envelope) {
+	boradcastMutex.Lock()
+	defer boradcastMutex.Unlock()
 	for nodeName, node := range clusterState {
 
 		if nodeName == config.Name {
