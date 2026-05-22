@@ -67,6 +67,12 @@ func handleRecvTasks(msg MessageTaskList) {
 	log.Printf("Réception de %d task dans le cadre de la migration.\n", len(msg.Tasks))
 
 	for _, t := range msg.Tasks {
+
+		taskQueueMapMu.Lock()
+		taskQueueMap[t.ID] = t
+		taskQueueMapMu.Unlock()
+
 		taskQueue <- t
 	}
+
 }
