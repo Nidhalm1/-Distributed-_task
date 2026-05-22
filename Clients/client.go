@@ -1,7 +1,5 @@
 package main
 
-//  submit cpu=10 mem=15 ls -l
-
 import (
 	"NVPROJET/common"
 	"bufio"
