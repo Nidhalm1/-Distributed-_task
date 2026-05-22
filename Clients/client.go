@@ -1,5 +1,7 @@
 package main
 
+//  submit cpu=10 mem=15 ls -l
+
 import (
 	"NVPROJET/common"
 	"bufio"
@@ -9,9 +11,27 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var tasks = make(map[string]*common.TaskResult)
+
+var reconnectDelay = 5 * time.Second // temps avant reconnexion si la connexion est coupée côté serveur
+
+func connect(address string) net.Conn {
+	for {
+		fmt.Println("Tentative de connexion en cours ...")
+		conn, err := net.Dial("tcp", address)
+		if err != nil {
+			fmt.Println("Tentative de connexion échouée. Nouvelle tentative dans", reconnectDelay, " secondes")
+			time.Sleep(reconnectDelay)
+			continue
+		}
+		fmt.Println("La connexion a été avec succés établie avec :", address)
+
+		return conn
+	}
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -19,11 +39,8 @@ func main() {
 		return
 	}
 	address := os.Args[1]
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		fmt.Println("Erreur de connexion:", err)
-		return
-	}
+	conn := connect(address)
+
 	defer conn.Close()
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
@@ -56,8 +73,11 @@ func main() {
 			var r common.Response
 			err = decoder.Decode(&r)
 			if err != nil {
-				fmt.Println("decode error:", err)
-				return
+				fmt.Println("Connexion perdue. Veuillez patienter...")
+				conn = connect(address)
+				encoder = json.NewEncoder(conn)
+				decoder = json.NewDecoder(conn)
+				continue
 			}
 			tasks[r.ID] = &common.TaskResult{}
 			fmt.Println("ID recu", r.ID)
@@ -75,10 +95,13 @@ func main() {
 			data, _ := json.Marshal(result)
 			encoder.Encode(common.Envelope{Type: "result", Data: data})
 			var r common.TaskResult
-			err = decoder.Decode(&r) // ce qu'il m'envoie
+			err := decoder.Decode(&r) // ce qu'il m'envoie
 			if err != nil {
-				fmt.Println("decode error:", err)
-				return
+				fmt.Println("Connexion perdue. Veuillez patienter...")
+				conn = connect(address)
+				encoder = json.NewEncoder(conn)
+				decoder = json.NewDecoder(conn)
+				continue
 			}
 			tasks[result.ID] = &r
 			fmt.Println("etat ID recu", r.Output)
