@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-type VersionedTasks struct { //permet d'identifier la verison la plus recente de l'information pour la migration (TCP est FIFO et broadcast lock donc pas besoin de plus)
+type VersionedTasks struct { //permet d'identifier la verison la plus recente de l'information pour la migration (TCP est FIFO)
 	Tasks   map[string]common.Task `json:"task"`
 	Version int                    `json:"version"`
 }
@@ -22,22 +22,15 @@ var (
 	others_tasks_listMu sync.RWMutex
 )
 
-type MessageSuppTask struct {
-	ID_envoyeur       string `json:"id_envoyeur"`
-	ID_task_concernee string `json:"task_concernee"`
-	Version           int    `json:"version_data"`
-}
-
-type MessageAddTask struct {
-	ID_envoyeur string      `json:"id_envoyeur"`
-	Task_data   common.Task `json:"task_data"`
-	Version     int         `json:"version_data"`
+type MessageMajTask struct {
+	ID_envoyeur string                 `json:"id_envoyeur"`
+	Tasks       map[string]common.Task `json:"task_data"`
+	Version     int                    `json:"version_data"`
 }
 
 // les differents types de messages:
 const (
-	TypeAddTask  = "AddTask"
-	TypeSuppTask = "SuppTask"
+	TypeMajTask = "MajTask"
 )
 
 func startServerTask(port int) {
@@ -68,21 +61,13 @@ func handleConnServeurTask(conn net.Conn) {
 
 	switch env.Type {
 
-	case TypeAddTask:
-		var msg MessageAddTask
+	case TypeMajTask:
+		var msg MessageMajTask
 		if err := json.Unmarshal(env.Data, &msg); err != nil {
 			log.Println("Erreur décodage handleConn AddTask:", err)
 			return
 		}
-		handleAddTask(msg)
-
-	case TypeSuppTask:
-		var msg MessageSuppTask
-		if err := json.Unmarshal(env.Data, &msg); err != nil {
-			log.Println("Erreur décodage handleConn SuppTask:", err)
-			return
-		}
-		handleSuppTask(msg)
+		handleMajdTask(msg)
 
 	case TypeElection:
 		var msg ElectionMessage
@@ -113,10 +98,14 @@ func handleConnServeurTask(conn net.Conn) {
 }
 
 // recv :
-func handleAddTask(msg MessageAddTask) {
 
+func handleMajdTask(msg MessageMajTask) {
 	others_tasks_listMu.Lock()
 	defer others_tasks_listMu.Unlock()
+
+	if others_tasks_list[msg.ID_envoyeur].Version >= msg.Version { //on a déjà recu une version plus recente !
+		return
+	}
 
 	// si nouvelle envoyeur
 	if _, exists := others_tasks_list[msg.ID_envoyeur]; !exists {
@@ -129,41 +118,23 @@ func handleAddTask(msg MessageAddTask) {
 
 	tmp := others_tasks_list[msg.ID_envoyeur]
 
-	//Ajout de la task
-	tmp.Tasks[msg.Task_data.ID] = msg.Task_data
-	// Mise à jour version
+	//on est obligé de faire une copie profonde:
+	newTasks := make(map[string]common.Task, len(msg.Tasks))
+	for k, v := range msg.Tasks {
+		newTasks[k] = v
+	}
+	tmp.Tasks = newTasks
 	tmp.Version = msg.Version
 
 	others_tasks_list[msg.ID_envoyeur] = tmp
 
-	fmt.Println("Je viends de ADD la task de : ", msg.ID_envoyeur)
-}
-
-func handleSuppTask(msg MessageSuppTask) {
-	others_tasks_listMu.Lock()
-	defer others_tasks_listMu.Unlock()
-
-	if _, exists := others_tasks_list[msg.ID_envoyeur]; !exists {
-		log.Println("node non listée handleSuppTask :", msg.ID_envoyeur)
-	} else {
-
-		tmp := others_tasks_list[msg.ID_envoyeur]
-		tmp.Version = msg.Version
-
-		if _, exists := others_tasks_list[msg.ID_envoyeur].Tasks[msg.ID_task_concernee]; !exists {
-			log.Println("task non listée handleSuppTask:", msg.ID_task_concernee)
-		} else {
-			delete(tmp.Tasks, msg.ID_task_concernee)
-		}
-
-		others_tasks_list[msg.ID_envoyeur] = tmp
-
-	}
+	log.Printf("%s: Je viends de mettre à jour les task de : %s ", config.Name, msg.ID_envoyeur)
 }
 
 // send:
-func broadcastNode(msg common.Envelope) {
+func broadcastToNodes(msg common.Envelope) {
 	for nodeName, node := range clusterState {
+
 		if nodeName == config.Name {
 			continue
 		}
@@ -181,55 +152,33 @@ func broadcastNode(msg common.Envelope) {
 
 }
 
-func broadcast_suppTask(task common.Task) {
+func broadcastMyTasks() {
+	// Vider taskQueue sans bloquer et collecter les tâches
 	versionMu.Lock()
-	defer versionMu.Unlock() //on lock jsuqu'ici car on envoie des mise à jour à la suite avec un numero de version
-
-	msg := MessageSuppTask{
-		ID_envoyeur:       config.Name,
-		ID_task_concernee: task.ID,
-		Version:           version_actuel,
-	}
-
-	data, err := json.Marshal(msg)
-	if err != nil {
-		log.Println("Erreur marshal msg:", err)
-		return
-	}
-
-	env := common.Envelope{
-		Type: TypeSuppTask,
-		Data: data,
-	}
-
-	broadcastNode(env)
 
 	version_actuel++
 
-}
+	taskQueueMapMu.Lock()
 
-func broadcast_addTask(task common.Task) {
-	versionMu.Lock()
-	defer versionMu.Unlock() //on lock jsuqu'à la fin car on envoie des mise à jour à la suite avec un numero de version
-
-	msg := MessageAddTask{
+	msg := MessageMajTask{
 		ID_envoyeur: config.Name,
-		Task_data:   task,
+		Tasks:       taskQueueMap,
 		Version:     version_actuel,
 	}
+	taskQueueMapMu.Unlock()
+
+	versionMu.Unlock()
 
 	data, err := json.Marshal(msg)
 	if err != nil {
-		log.Println("Erreur marshal msg:", err)
+		log.Println("Erreur marshal broadcastOwnTasks:", err)
 		return
 	}
 
 	env := common.Envelope{
-		Type: TypeAddTask,
+		Type: TypeMajTask,
 		Data: data,
 	}
 
-	broadcastNode(env)
-
-	version_actuel++
+	broadcastToNodes(env)
 }
