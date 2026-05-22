@@ -69,13 +69,18 @@ func handleSubmit(encoder *json.Encoder, requestType common.SubmitRequest) {
 	var resp common.Response = common.Response{
 		ID: t.ID,
 	}
+	taskQueueMapMu.Lock()
+	taskQueueMap[t.ID] = t
+	taskQueueMapMu.Unlock()
+
 	taskQueue <- t
+
 	encoder.Encode(resp)
 	fmt.Println("Task reçue:", t.Command, t.Args)
 
 	/// on va mettre à jour notre file de task chez tous les serveurs:
-	log.Printf("%s: broadcast la ADD d'une task\n", config.Name)
-	go broadcast_addTask(t)
+	log.Printf("%s: broadcast suite à l'ajout d'une task d'une task\n", config.Name)
+	go broadcastMyTasks()
 	///
 }
 
