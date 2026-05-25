@@ -1,12 +1,14 @@
 #!/bin/bash
 
+# génère le fichier docker-compose.yml (fichier de configuration de docker compose)
+
 N=${1:-3}  # nombre de serveurs
 M=${2:-3}  # nombre de clients
-BASE_PORT=1234
+BASE_PORT=1234 # port des serveurs
 BASE_ALT=7941
-SUBNET="172.20.0"
-SERVER0_IP="$SUBNET.10"
-REF="$SERVER0_IP:$BASE_ALT"
+SUBNET="172.20.0" # radical de l'ip des serveurs
+SERVER0_IP="$SUBNET.10" # serveur du serveur 0
+REF="$SERVER0_IP:$BASE_ALT" # adresse du cluster sur lequel les serveurs se connectent
 
 echo "services:" > docker-compose.yml
 
@@ -61,4 +63,4 @@ echo "    ipam:" >> docker-compose.yml
 echo "      config:" >> docker-compose.yml
 echo "        - subnet: $SUBNET.0/24" >> docker-compose.yml
 
-echo "✅ docker-compose.yml généré avec $N serveurs et $M clients"
+echo "docker-compose.yml généré avec $N serveurs et $M clients"
