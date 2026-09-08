@@ -1,4 +1,4 @@
-# Dsched — Peer-to-Peer Request Scheduler
+# Dsched - Peer-to-Peer Request Scheduler
 
 A **decentralized request scheduler in Go**. There is no central dispatcher: every node is both a worker and a scheduler, and any node can route an incoming request to the **least-loaded node in the cluster**.
 
@@ -10,7 +10,7 @@ Nodes discover each other and share their load state through a **gossip protocol
 
 A classic load balancer is a single point of failure and a bottleneck: every request goes through it, and it must know the state of every backend. Dsched removes it. Each node keeps an approximate, gossip-propagated view of the cluster's load and forwards work accordingly.
 
-The trade-off is explicit: the load view is **eventually consistent**, so routing is *approximately* optimal rather than perfectly optimal — and that is enough, because the cost of a slightly stale view is far lower than the cost of a central bottleneck.
+The trade-off is explicit: the load view is **eventually consistent**, so routing is *approximately* optimal rather than perfectly optimal - and that is enough, because the cost of a slightly stale view is far lower than the cost of a central bottleneck.
 
 ---
 
@@ -37,9 +37,9 @@ The trade-off is explicit: the load view is **eventually consistent**, so routin
 
 Each node runs three loops:
 
-1. **Server loop** — accepts requests, decides *execute locally* or *forward*.
-2. **Gossip loop** — periodically picks random peers and exchanges membership + load state.
-3. **Worker loop** — drains the local queue and executes tasks, updating the local load counter.
+1. **Server loop** - accepts requests, decides *execute locally* or *forward*.
+2. **Gossip loop** - periodically picks random peers and exchanges membership + load state.
+3. **Worker loop** - drains the local queue and executes tasks, updating the local load counter.
 
 ---
 
@@ -57,7 +57,7 @@ else:
 ```
 
 - **Hysteresis** prevents ping-ponging when two nodes have almost identical load.
-- **Forward hop limit** — a forwarded request carries a hop counter and is executed unconditionally at the limit, so a request can never loop through the cluster.
+- **Forward hop limit** - a forwarded request carries a hop counter and is executed unconditionally at the limit, so a request can never loop through the cluster.
 - **Load metric** is the queue depth plus in-flight tasks, normalized by the node's declared capacity, so heterogeneous nodes are comparable.
 
 ### Gossip
@@ -124,7 +124,7 @@ Start a three-node cluster on one machine:
 ./bin/dsched --id=C --listen=:7003 --http=:8003 --capacity=8 --seeds=127.0.0.1:7001
 ```
 
-Submit work to **any** node — it will be executed wherever there is capacity:
+Submit work to **any** node - it will be executed wherever there is capacity:
 
 ```bash
 curl -X POST http://localhost:8001/submit \
@@ -161,7 +161,7 @@ curl -s http://localhost:8002/status | jq
 | `--id` | hostname | Node identity |
 | `--listen` | `:7001` | Gossip / forwarding address |
 | `--http` | `:8001` | Client API address |
-| `--seeds` | — | Comma-separated bootstrap addresses |
+| `--seeds` | - | Comma-separated bootstrap addresses |
 | `--capacity` | `runtime.NumCPU()` | Concurrent tasks the node can run |
 | `--gossip-interval` | `500ms` | Time between gossip rounds |
 | `--gossip-fanout` | `3` | Peers contacted per round |
@@ -182,12 +182,12 @@ make race           # go test -race
 
 The integration suite spins up in-process clusters and asserts the properties that actually matter:
 
-- **Routing** — under a skewed load, requests submitted to a saturated node end up on the least-loaded one, and no request exceeds the hop limit.
-- **Discovery** — a node started with a single seed learns every other member within a bounded number of gossip rounds.
-- **Join** — a node added to a running cluster starts receiving forwarded work without any restart or config change elsewhere.
-- **Failure** — a killed node is marked `dead` by all survivors, disappears from routing candidates, and no request is routed to it afterwards; the cluster keeps serving.
-- **Convergence** — after load stops changing, every node's view of every other node's load converges within the expected number of rounds.
-- **Anti-flapping** — two nodes with near-equal load do not forward requests back and forth.
+- **Routing** - under a skewed load, requests submitted to a saturated node end up on the least-loaded one, and no request exceeds the hop limit.
+- **Discovery** - a node started with a single seed learns every other member within a bounded number of gossip rounds.
+- **Join** - a node added to a running cluster starts receiving forwarded work without any restart or config change elsewhere.
+- **Failure** - a killed node is marked `dead` by all survivors, disappears from routing candidates, and no request is routed to it afterwards; the cluster keeps serving.
+- **Convergence** - after load stops changing, every node's view of every other node's load converges within the expected number of rounds.
+- **Anti-flapping** - two nodes with near-equal load do not forward requests back and forth.
 
 ---
 
@@ -207,4 +207,4 @@ MIT
 
 ## Author
 
-**Nidhal Moussa** — [GitHub](https://github.com/Nidhalm1)
+**Nidhal Moussa** - [GitHub](https://github.com/Nidhalm1)
